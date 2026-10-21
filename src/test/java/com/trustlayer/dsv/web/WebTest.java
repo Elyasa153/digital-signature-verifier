@@ -9,19 +9,35 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.ByteArrayInputStream;
+import java.nio.file.Path;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509CRL;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 class WebTest {
+
+    @TempDir
+    static Path runtime;
+
+    @DynamicPropertySource
+    static void props(DynamicPropertyRegistry r) {
+        r.add("dsv.runtime-dir", runtime::toString);
+        r.add("dsv.keystore-password", () -> "test-parola");
+    }
 
     @Autowired
     MockMvc mvc;
@@ -63,5 +79,15 @@ class WebTest {
         mvc.perform(post("/panel").param("belge", "ornek-hastane/saglik-raporu").param("kayitNo", "YOK"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("Kayıt bulunamadı")));
+    }
+
+    @Test
+    void crlIsPublished() throws Exception {
+        byte[] der = mvc.perform(get("/crl"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/pkix-crl"))
+                .andReturn().getResponse().getContentAsByteArray();
+        var crl = (X509CRL) CertificateFactory.getInstance("X.509").generateCRL(new ByteArrayInputStream(der));
+        assertEquals("CN=TrustLayer Root CA,O=TrustLayer,C=TR", crl.getIssuerX500Principal().getName());
     }
 }
