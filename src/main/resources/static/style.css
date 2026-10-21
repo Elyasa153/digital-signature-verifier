@@ -1,0 +1,89 @@
+body {
+    margin: 0;
+    background: #f5f6f8;
+    color: #1d2330;
+    font: 16px/1.5 system-ui, sans-serif;
+}
+
+main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 32px 16px;
+}
+
+form {
+    display: grid;
+    gap: 12px;
+    margin: 24px 0;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #d8dce3;
+    border-radius: 8px;
+}
+
+label {
+    display: grid;
+    gap: 4px;
+    font-weight: 600;
+}
+
+input, select, button {
+    font: inherit;
+    padding: 10px;
+    border: 1px solid #b9c0cc;
+    border-radius: 6px;
+}
+
+button {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #fff;
+    cursor: pointer;
+}
+
+.uyari, .hata, .sonuc {
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid;
+}
+
+.uyari, .dikkat {
+    background: #fff7e6;
+    border-color: #f0c36d;
+}
+
+.hata, .gecersiz {
+    background: #fdecec;
+    border-color: #e9a3a3;
+}
+
+.gecerli {
+    background: #e9f7ee;
+    border-color: #8fd1a6;
+}
+
+.uyari small {
+    display: block;
+    margin-top: 4px;
+    word-break: break-all;
+}
+
+.sonuc h2 {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+}
+
+dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 16px;
+    margin: 0 0 8px;
+}
+
+dt {
+    font-weight: 600;
+}
+
+dd {
+    margin: 0;
+}

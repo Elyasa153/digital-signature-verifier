@@ -1,0 +1,22 @@
+{
+  "issuer": "Örnek Üniversitesi Öğrenci İşleri Daire Başkanlığı",
+  "title": "TRANSKRİPT",
+  "intro": "{ad_soyad} adlı öğrencinin {bolum} bölümünde aldığı derslerin not dökümü aşağıdadır.",
+  "fields": [
+    {"key": "ogrenci_no", "label": "Öğrenci No"},
+    {"key": "ad_soyad", "label": "Ad Soyad"},
+    {"key": "bolum", "label": "Bölüm"},
+    {"key": "giris_yili", "label": "Giriş Yılı"}
+  ],
+  "table": {
+    "source": "transkript-dersler",
+    "columns": [
+      {"key": "donem", "label": "Dönem", "width": 85},
+      {"key": "kod", "label": "Kod", "width": 70},
+      {"key": "ders_adi", "label": "Ders Adı"},
+      {"key": "kredi", "label": "Kredi", "width": 45},
+      {"key": "harf", "label": "Not", "width": 35}
+    ]
+  },
+  "closing": "Genel Not Ortalaması (GNO): {gno}"
+}
