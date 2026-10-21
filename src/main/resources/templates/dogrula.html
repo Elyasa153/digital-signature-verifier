@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Belge Doğrulama</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<main>
+    <h1>Belge Doğrulama</h1>
+    <p>Elinizdeki PDF belgesini yükleyin. Belge değiştirilmiş mi, kim tarafından imzalanmış, imzalayana güvenilir mi
+        görürsünüz. Dosya saklanmaz.</p>
+
+    <p class="uyari" th:if="${belge}">
+        QR kod belgeyi doğrulamaz, yalnızca bu sayfaya yönlendirir. Doğrulama için elinizdeki PDF dosyasını yükleyin.
+        <small>Belge no: <span th:text="${belge}"></span></small>
+    </p>
+
+    <form method="post" enctype="multipart/form-data" th:action="@{/dogrula}">
+        <input type="file" name="pdf" accept="application/pdf,.pdf" required>
+        <button type="submit">Doğrula</button>
+    </form>
+
+    <p class="hata" th:if="${hata}" th:text="${hata}"></p>
+
+    <section th:if="${sonuc}" class="sonuc" th:with="v=${sonuc.verdict().name()}"
+             th:classappend="${v == 'VALID'} ? 'gecerli' : (${v == 'REVOKED' or v == 'UNTRUSTED'} ? 'dikkat' : 'gecersiz')">
+        <h2 th:switch="${v}">
+            <span th:case="'VALID'">✅ Belge geçerli</span>
+            <span th:case="'MODIFIED'">❌ Belge imzadan sonra değiştirilmiş</span>
+            <span th:case="'UNTRUSTED'">⚠️ İmzalayan tanınmıyor</span>
+            <span th:case="'REVOKED'">⚠️ İmzalayanın sertifikası iptal edilmiş</span>
+            <span th:case="*">❌ Belgede elektronik imza bulunamadı</span>
+        </h2>
+        <dl th:if="${sonuc.signer()}">
+            <dt>İmzalayan</dt>
+            <dd th:text="${sonuc.signer()}"></dd>
+            <dt>İmza zamanı</dt>
+            <dd th:text="${sonuc.signedAt() != null} ? ${#temporals.format(sonuc.signedAt(), 'dd.MM.yyyy HH:mm', 'Europe/Istanbul')} : '-'"></dd>
+        </dl>
+        <p th:text="${sonuc.detail()}"></p>
+    </section>
+</main>
+</body>
+</html>

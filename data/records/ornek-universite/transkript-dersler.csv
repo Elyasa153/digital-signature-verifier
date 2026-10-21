@@ -1,0 +1,17 @@
+ogrenci_no;donem;kod;ders_adi;kredi;harf
+2021001;2021 Güz;BMÜ-101;Programlamaya Giriş;4;AA
+2021001;2021 Güz;MAT-101;Matematik I;4;BA
+2021001;2022 Bahar;BMÜ-102;Nesneye Dayalı Programlama;4;BB
+2021001;2022 Bahar;MAT-102;Matematik II;4;CB
+2021001;2022 Güz;BMÜ-201;Veri Yapıları;4;AA
+2021001;2023 Bahar;BMÜ-202;Algoritma Analizi;3;BA
+2021001;2024 Güz;BMÜ-401;Bilgisayar Mühendisliği Tasarımı;4;AA
+2021002;2021 Güz;BMÜ-101;Programlamaya Giriş;4;CB
+2021002;2021 Güz;MAT-101;Matematik I;4;CC
+2021002;2022 Bahar;BMÜ-102;Nesneye Dayalı Programlama;4;BB
+2021002;2022 Güz;BMÜ-201;Veri Yapıları;4;BA
+2022003;2022 Güz;EEM-101;Devre Analizi I;4;BA
+2022003;2022 Güz;MAT-101;Matematik I;4;BB
+2022003;2023 Bahar;EEM-102;Devre Analizi II;4;AA
+2022004;2022 Güz;YZM-101;Yazılım Mühendisliğine Giriş;3;BB
+2022004;2023 Bahar;YZM-102;Veri Tabanı Sistemleri;4;CB

@@ -1,0 +1,14 @@
+{
+  "issuer": "Örnek Devlet Hastanesi",
+  "title": "SAĞLIK RAPORU",
+  "intro": "Bu rapor, {muayene_tarihi} tarihinde muayene edilen {ad_soyad} için düzenlenmiştir.",
+  "fields": [
+    {"key": "rapor_no", "label": "Rapor No"},
+    {"key": "ad_soyad", "label": "Ad Soyad"},
+    {"key": "dogum_tarihi", "label": "Doğum Tarihi"},
+    {"key": "muayene_tarihi", "label": "Muayene Tarihi"},
+    {"key": "rapor_turu", "label": "Rapor Türü"},
+    {"key": "karar", "label": "Karar"},
+    {"key": "hekim", "label": "Raporu Düzenleyen"}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "issuer": "Örnek Üniversitesi Sürekli Eğitim Merkezi",
+  "title": "KATILIM SERTİFİKASI",
+  "intro": "{ad_soyad}, {tarih} tarihinde tamamlanan {sure_saat} saatlik \"{egitim_adi}\" eğitimine katılmıştır.",
+  "fields": [
+    {"key": "sertifika_no", "label": "Sertifika No"},
+    {"key": "ad_soyad", "label": "Ad Soyad"},
+    {"key": "egitim_adi", "label": "Eğitim"},
+    {"key": "sure_saat", "label": "Süre (saat)"},
+    {"key": "tarih", "label": "Tamamlanma Tarihi"}
+  ]
+}

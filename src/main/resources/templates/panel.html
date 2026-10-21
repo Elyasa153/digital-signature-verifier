@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Belge Üretim Paneli</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<main>
+    <h1>Belge Üretim Paneli</h1>
+    <p>Belge türünü ve kayıt numarasını girin; belge şablondan üretilip indirilir.
+        İmza modülü bağlandığında belge imzalı olarak indirilecek.</p>
+
+    <form method="post" th:action="@{/panel}">
+        <label>Belge türü
+            <!-- Kurum girişi (FR-8) gelince liste kullanıcının kurumundan gelecek. -->
+            <select name="belge">
+                <option value="ornek-universite/transkript">Örnek Üniversitesi · Transkript</option>
+                <option value="ornek-universite/katilim-sertifikasi">Örnek Üniversitesi · Katılım Sertifikası</option>
+                <option value="ornek-hastane/saglik-raporu">Örnek Devlet Hastanesi · Sağlık Raporu</option>
+            </select>
+        </label>
+        <label>Kayıt no
+            <input name="kayitNo" required placeholder="ör. 2021001, SRT-2026-001, SR-2026-0101">
+        </label>
+        <button type="submit">Belgeyi üret</button>
+    </form>
+
+    <p class="hata" th:if="${hata}" th:text="${hata}"></p>
+</main>
+</body>
+</html>
