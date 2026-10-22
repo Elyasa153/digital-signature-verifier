@@ -62,7 +62,9 @@ class WebTest {
         var file = new MockMultipartFile("pdf", "x.pdf", "application/pdf", "bu bir pdf değil".getBytes());
         mvc.perform(multipart("/dogrula").file(file))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("elektronik imza bulunamadı")));
+                .andExpect(content().string(containsString("elektronik imza bulunamadı")))
+                .andExpect(content().string(containsString("data-sonuc=\"kaldi\"")))
+                .andExpect(content().string(not(containsString("data-sonuc=\"gecti\""))));
     }
 
     @Test

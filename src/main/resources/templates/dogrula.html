@@ -3,44 +3,80 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Belge Doğrulama</title>
+    <title>Belge Doğrulama · TrustLayer</title>
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 <body>
+<header th:replace="~{ortak :: ust('dogrula')}"></header>
 <main>
     <h1>Belge Doğrulama</h1>
-    <p>Elinizdeki PDF belgesini yükleyin. Belge değiştirilmiş mi, kim tarafından imzalanmış, imzalayana güvenilir mi
-        görürsünüz. Dosya saklanmaz.</p>
+    <p class="giris">PDF'i yükleyin: değiştirilmiş mi, kim imzalamış, imzalayana güvenilir mi görün. Dosya saklanmaz.</p>
 
-    <p class="uyari" th:if="${belge}">
-        QR kod belgeyi doğrulamaz, yalnızca bu sayfaya yönlendirir. Doğrulama için elinizdeki PDF dosyasını yükleyin.
-        <small>Belge no: <span th:text="${belge}"></span></small>
-    </p>
+    <div class="uyari" th:if="${belge}">
+        <span aria-hidden="true">⚠️</span>
+        <div>
+            QR kod belgeyi doğrulamaz, yalnızca bu sayfaya yönlendirir. Karar, yüklediğiniz PDF'teki imzadan verilir.
+            <small>Belge no: <span th:text="${belge}"></span></small>
+        </div>
+    </div>
 
     <form method="post" enctype="multipart/form-data" th:action="@{/dogrula}">
-        <input type="file" name="pdf" accept="application/pdf,.pdf" required>
+        <label class="birak">
+            <strong>PDF'i buraya bırakın</strong>
+            <span>ya da tıklayıp seçin</span>
+            <span class="dosya" hidden></span>
+            <input type="file" name="pdf" accept="application/pdf,.pdf" required>
+        </label>
         <button type="submit">Doğrula</button>
     </form>
 
     <p class="hata" th:if="${hata}" th:text="${hata}"></p>
 
-    <section th:if="${sonuc}" class="sonuc" th:with="v=${sonuc.verdict().name()}"
+    <!-- Kontroller Verdict sırasıyla yapılır; ilk başarısız olan sonucu belirler, sonrakiler hiç çalışmaz. -->
+    <section th:if="${sonuc}" class="kart" th:with="v=${sonuc.verdict().name()}, r=${sonuc.verdict().ordinal()}"
              th:classappend="${v == 'VALID'} ? 'gecerli' : (${v == 'REVOKED' or v == 'UNTRUSTED'} ? 'dikkat' : 'gecersiz')">
-        <h2 th:switch="${v}">
-            <span th:case="'VALID'">✅ Belge geçerli</span>
-            <span th:case="'MODIFIED'">❌ Belge imzadan sonra değiştirilmiş</span>
-            <span th:case="'UNTRUSTED'">⚠️ İmzalayan tanınmıyor</span>
-            <span th:case="'REVOKED'">⚠️ İmzalayanın sertifikası iptal edilmiş</span>
-            <span th:case="*">❌ Belgede elektronik imza bulunamadı</span>
-        </h2>
+        <div class="bas">
+            <div class="muhur" aria-hidden="true" th:text="${v == 'VALID'} ? '✓' : (${v == 'MODIFIED' or v == 'UNSIGNED'} ? '✕' : '!')"></div>
+            <div>
+                <h2 th:switch="${v}">
+                    <span th:case="'VALID'">Belge geçerli</span>
+                    <span th:case="'MODIFIED'">Belge imzadan sonra değiştirilmiş</span>
+                    <span th:case="'UNTRUSTED'">İmzalayan tanınmıyor</span>
+                    <span th:case="'REVOKED'">İmzalayanın sertifikası iptal edilmiş</span>
+                    <span th:case="*">Belgede elektronik imza bulunamadı</span>
+                </h2>
+                <p th:text="${sonuc.detail()}"></p>
+            </div>
+        </div>
+        <ul class="kontroller">
+            <li th:each="k, s : ${ {'Elektronik imza var', 'İmzadan sonra değiştirilmemiş', 'İmzalayan TrustLayer kök sertifikasına bağlı', 'Sertifika iptal edilmemiş'} }"
+                th:with="d=${s.index < r} ? 'gecti' : (${s.index == r} ? 'kaldi' : 'atlandi')"
+                th:attr="data-sonuc=${d}">
+                <i aria-hidden="true" th:text="${d == 'gecti'} ? '✓' : (${d == 'kaldi'} ? '✕' : '–')"></i>
+                <span th:text="${k}"></span>
+                <span class="gizli" th:text="${d == 'gecti'} ? '(geçti)' : (${d == 'kaldi'} ? '(başarısız)' : '(kontrol edilmedi)')"></span>
+            </li>
+        </ul>
         <dl th:if="${sonuc.signer()}">
             <dt>İmzalayan</dt>
             <dd th:text="${sonuc.signer()}"></dd>
             <dt>İmza zamanı</dt>
             <dd th:text="${sonuc.signedAt() != null} ? ${#temporals.format(sonuc.signedAt(), 'dd.MM.yyyy HH:mm', 'Europe/Istanbul')} : '-'"></dd>
         </dl>
-        <p th:text="${sonuc.detail()}"></p>
     </section>
 </main>
+<footer th:replace="~{ortak :: alt}"></footer>
+<script>
+    const alan = document.querySelector('.birak');
+    const girdi = alan.querySelector('input');
+    const ad = alan.querySelector('.dosya');
+    girdi.addEventListener('change', () => {
+        const f = girdi.files[0];
+        ad.hidden = !f;
+        if (f) ad.textContent = f.name + ' · ' + Math.ceil(f.size / 1024) + ' KB';
+    });
+    ['dragenter', 'dragover'].forEach(e => alan.addEventListener(e, () => alan.classList.add('ustunde')));
+    ['dragleave', 'drop'].forEach(e => alan.addEventListener(e, () => alan.classList.remove('ustunde')));
+</script>
 </body>
 </html>

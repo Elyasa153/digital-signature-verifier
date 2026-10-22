@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- aktif: 'dogrula' | 'panel' -->
+<header th:fragment="ust(aktif)">
+    <div class="ic">
+        <a class="logo" th:href="@{/dogrula}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/>
+                <path d="m8.5 12 2.5 2.5 4.5-5"/>
+            </svg>
+            TrustLayer
+        </a>
+        <nav>
+            <a th:href="@{/dogrula}" th:classappend="${aktif == 'dogrula'} ? 'aktif'">Belge doğrula</a>
+            <a th:href="@{/panel}" th:classappend="${aktif == 'panel'} ? 'aktif'">Kurum paneli</a>
+        </nav>
+    </div>
+</header>
+
+<footer th:fragment="alt">TrustLayer · BMÜ-401 Dijital İmza Projesi</footer>
+</body>
+</html>

@@ -1,6 +1,8 @@
 package com.trustlayer.dsv.web;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -68,12 +70,17 @@ class EndToEndTest {
         // Doğrulama sayfası aynı sonucu gösterir.
         mvc.perform(multipart("/dogrula").file(new MockMultipartFile("pdf", "b.pdf", "application/pdf", report)))
                 .andExpect(content().string(containsString("Belge geçerli")))
-                .andExpect(content().string(containsString("Örnek Devlet Hastanesi")));
+                .andExpect(content().string(containsString("Örnek Devlet Hastanesi")))
+                .andExpect(content().string(not(containsString("data-sonuc=\"kaldi\""))));
 
         // Tek bayt değişikliği.
         byte[] tampered = transcript.clone();
         tampered[tampered.length / 3] ^= 0x01;
         assertEquals(Verdict.MODIFIED, verifier.verify(tampered).verdict());
+        // Kontrol listesi: imza var geçti, bütünlük kaldı, zincir ve iptal hiç çalışmadı.
+        mvc.perform(multipart("/dogrula").file(new MockMultipartFile("pdf", "t.pdf", "application/pdf", tampered)))
+                .andExpect(content().string(stringContainsInOrder(
+                        "data-sonuc=\"gecti\"", "data-sonuc=\"kaldi\"", "data-sonuc=\"atlandi\"", "data-sonuc=\"atlandi\"")));
 
         // UC-3: üniversitenin sertifikası iptal → onun bütün belgeleri REVOKED, hastaneninki etkilenmez.
         ca.revoke(registry.signingIdentity("ornek-universite").certificate().getSerialNumber());
