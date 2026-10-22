@@ -1,89 +1,318 @@
+:root {
+    --murekkep: #14213d;
+    --kagit: #f7f5f0;
+    --cizgi: #d9d3c7;
+    --soluk: #4a5568;
+    --gecerli: #1f7a4d;
+    --gecersiz: #b42318;
+    --dikkat: #b26b00;
+    --baslik-font: Georgia, "Times New Roman", serif;
+}
+
 body {
     margin: 0;
-    background: #f5f6f8;
-    color: #1d2330;
-    font: 16px/1.5 system-ui, sans-serif;
+    background: var(--kagit);
+    color: var(--murekkep);
+    font: 16px/1.55 system-ui, sans-serif;
+}
+
+/* Başlık */
+
+header {
+    background: var(--murekkep);
+    color: #fff;
+}
+
+header .ic {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 14px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    text-decoration: none;
+    font: 700 1.05rem var(--baslik-font);
+    letter-spacing: .02em;
+}
+
+nav {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+}
+
+nav a {
+    color: #cbd5e1;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: .92rem;
+}
+
+nav a.aktif {
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
 }
 
 main {
-    max-width: 640px;
+    max-width: 720px;
     margin: 0 auto;
-    padding: 32px 16px;
+    padding: 28px 16px 40px;
 }
+
+h1 {
+    margin: 0 0 6px;
+    font: 700 1.75rem/1.2 var(--baslik-font);
+}
+
+.giris {
+    margin: 0 0 20px;
+    color: var(--soluk);
+}
+
+footer {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 16px 24px;
+    font-size: .8rem;
+    color: #8a8478;
+}
+
+/* Form */
 
 form {
     display: grid;
-    gap: 12px;
-    margin: 24px 0;
-    padding: 20px;
-    background: #fff;
-    border: 1px solid #d8dce3;
-    border-radius: 8px;
+    gap: 14px;
+    margin: 0 0 16px;
 }
 
 label {
     display: grid;
-    gap: 4px;
+    gap: 6px;
     font-weight: 600;
+    font-size: .95rem;
 }
 
-input, select, button {
+input, select {
     font: inherit;
-    padding: 10px;
-    border: 1px solid #b9c0cc;
-    border-radius: 6px;
+    padding: 11px 12px;
+    border: 1px solid #c9c2b4;
+    border-radius: 8px;
+    background: #fff;
 }
 
 button {
-    background: #1d4ed8;
-    border-color: #1d4ed8;
+    font: 600 1rem system-ui, sans-serif;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--murekkep);
     color: #fff;
     cursor: pointer;
 }
 
-.uyari, .hata, .sonuc {
-    padding: 12px 16px;
-    border-radius: 8px;
-    border: 1px solid;
+.ipucu {
+    font-weight: 400;
+    font-size: .85rem;
+    color: #6b7280;
 }
 
-.uyari, .dikkat {
-    background: #fff7e6;
-    border-color: #f0c36d;
+/* Panel formu kart içinde */
+
+.adimlar + form {
+    padding: 20px;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 10px;
 }
 
-.hata, .gecersiz {
-    background: #fdecec;
-    border-color: #e9a3a3;
+.adimlar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 18px;
+    padding: 0;
+    list-style: none;
+    font-size: .85rem;
+    color: var(--soluk);
 }
 
-.gecerli {
-    background: #e9f7ee;
-    border-color: #8fd1a6;
+.adimlar li {
+    padding: 4px 10px;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 99px;
+}
+
+/* Dosya input'u alanın tamamını kaplar ve görünmezdir: tıklama ve bırakma doğrudan ona gider. */
+.birak {
+    position: relative;
+    display: grid;
+    place-items: center;
+    gap: 6px;
+    padding: 28px 16px;
+    text-align: center;
+    font-weight: 400;
+    color: var(--soluk);
+    background: #fff;
+    border: 2px dashed #b8b0a0;
+    border-radius: 10px;
+}
+
+.birak strong {
+    color: var(--murekkep);
+}
+
+.birak.ustunde, .birak:focus-within {
+    border-color: var(--murekkep);
+    background: #f1ede4;
+}
+
+.birak input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.dosya {
+    padding: 4px 10px;
+    font-size: .9rem;
+    color: var(--murekkep);
+    background: #f1ede4;
+    border-radius: 99px;
+    word-break: break-all;
+}
+
+.dosya[hidden] {
+    display: none;
+}
+
+/* Uyarı ve hata */
+
+.uyari {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    font-size: .95rem;
+    background: #fdf6e7;
+    border-left: 4px solid var(--dikkat);
+    border-radius: 0 6px 6px 0;
 }
 
 .uyari small {
     display: block;
     margin-top: 4px;
+    color: #6b5b3e;
     word-break: break-all;
 }
 
-.sonuc h2 {
-    margin: 0 0 8px;
-    font-size: 1.2rem;
+.hata {
+    padding: 12px 16px;
+    background: #fdecec;
+    border-left: 4px solid var(--gecersiz);
+    border-radius: 0 6px 6px 0;
+}
+
+/* Sonuç kartı */
+
+.kart {
+    --renk: var(--gecersiz);
+    margin-top: 24px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 10px;
+}
+
+.kart.gecerli { --renk: var(--gecerli); }
+.kart.dikkat { --renk: var(--dikkat); }
+
+.kart .bas {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    border-bottom: 1px solid var(--cizgi);
+}
+
+.muhur {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--renk);
+    color: #fff;
+    font: 700 1.4rem system-ui, sans-serif;
+}
+
+.kart h2 {
+    margin: 0;
+    font: 700 1.2rem var(--baslik-font);
+    color: var(--renk);
+}
+
+.kart .bas p {
+    margin: 2px 0 0;
+    font-size: .92rem;
+    color: var(--soluk);
+}
+
+.kontroller {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 18px;
+    list-style: none;
+}
+
+.kontroller li {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.kontroller i {
+    width: 20px;
+    font-style: normal;
+    font-weight: 700;
+    text-align: center;
+}
+
+[data-sonuc=gecti] i { color: var(--gecerli); }
+[data-sonuc=kaldi] i { color: var(--gecersiz); }
+[data-sonuc=atlandi] { color: #a0a6b1; }
+
+/* Ekran okuyucu için: ikonun anlamını metin olarak verir. */
+.gizli {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
 }
 
 dl {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 4px 16px;
-    margin: 0 0 8px;
-}
-
-dt {
-    font-weight: 600;
-}
-
-dd {
     margin: 0;
+    padding: 12px 18px;
+    font-size: .95rem;
+    background: #faf9f6;
+    border-top: 1px solid var(--cizgi);
 }
+
+dt { color: #6b7280; }
+dd { margin: 0; font-weight: 600; }

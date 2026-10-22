@@ -3,31 +3,43 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Belge Üretim Paneli</title>
+    <title>Belge Üretim Paneli · TrustLayer</title>
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 <body>
+<header th:replace="~{ortak :: ust('panel')}"></header>
 <main>
     <h1>Belge Üretim Paneli</h1>
-    <p>Belge türünü ve kayıt numarasını girin; belge şablondan üretilip indirilir.
-        İmza modülü bağlandığında belge imzalı olarak indirilecek.</p>
+    <ol class="adimlar">
+        <li>1 · Şablondan üret</li>
+        <li>2 · Kurum anahtarıyla imzala</li>
+        <li>3 · İndir</li>
+    </ol>
 
     <form method="post" th:action="@{/panel}">
         <label>Belge türü
             <!-- Kurum girişi (FR-8) gelince liste kullanıcının kurumundan gelecek. -->
             <select name="belge">
-                <option value="ornek-universite/transkript">Örnek Üniversitesi · Transkript</option>
-                <option value="ornek-universite/katilim-sertifikasi">Örnek Üniversitesi · Katılım Sertifikası</option>
-                <option value="ornek-hastane/saglik-raporu">Örnek Devlet Hastanesi · Sağlık Raporu</option>
+                <option value="ornek-universite/transkript" data-ipucu="Transkript: öğrenci no (ör. 2021001)">Örnek Üniversitesi · Transkript</option>
+                <option value="ornek-universite/katilim-sertifikasi" data-ipucu="Sertifika no (ör. SRT-2026-001)">Örnek Üniversitesi · Katılım Sertifikası</option>
+                <option value="ornek-hastane/saglik-raporu" data-ipucu="Rapor no (ör. SR-2026-0101)">Örnek Devlet Hastanesi · Sağlık Raporu</option>
             </select>
         </label>
-        <label>Kayıt no
-            <input name="kayitNo" required placeholder="ör. 2021001, SRT-2026-001, SR-2026-0101">
+        <label>Kayıt no <span class="ipucu"></span>
+            <input name="kayitNo" required>
         </label>
-        <button type="submit">Belgeyi üret</button>
+        <button type="submit">İmzalı belgeyi üret ve indir</button>
     </form>
 
     <p class="hata" th:if="${hata}" th:text="${hata}"></p>
 </main>
+<footer th:replace="~{ortak :: alt}"></footer>
+<script>
+    const tur = document.querySelector('select[name=belge]');
+    const ipucu = document.querySelector('.ipucu');
+    const ipucuGoster = () => ipucu.textContent = tur.selectedOptions[0].dataset.ipucu;
+    tur.addEventListener('change', ipucuGoster);
+    ipucuGoster();
+</script>
 </body>
 </html>
