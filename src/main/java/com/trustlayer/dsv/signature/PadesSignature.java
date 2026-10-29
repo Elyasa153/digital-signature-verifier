@@ -114,7 +114,8 @@ class PadesSignature implements PdfSigner, PdfVerifier {
             }
             cert = new JcaX509CertificateConverter().getCertificate(matches.iterator().next());
             // Özet (SHA-256) + imza: imzalanan bayt aralığında tek bayt değişse burada düşer.
-            if (!signer.verify(new JcaSimpleSignerInfoVerifierBuilder().build(cert))) {
+            // Açık anahtarla kurulur: sertifikayla kurulursa BC süre dolmuşken istisna atar, adım 3'e gelmeden MODIFIED olur.
+            if (!signer.verify(new JcaSimpleSignerInfoVerifierBuilder().build(cert.getPublicKey()))) {
                 return modified("Belge imzalandıktan sonra değiştirilmiş.");
             }
             signedAt = signingTime(signer, signature);
