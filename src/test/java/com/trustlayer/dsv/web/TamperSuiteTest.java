@@ -52,6 +52,8 @@ class TamperSuiteTest {
 	    MockMvc mvc;
 	    @Autowired
 	    PdfVerifier verifier;
+	    private final StringBuilder tablo = new StringBuilder(        
+	            "| Dosya | Beklenen | Doğrulayıcı | /dogrula |\n|---|---|---|---|\n");
 	    
 	    @Test
 	    void tamperSuite()throws Exception {
@@ -117,6 +119,9 @@ class TamperSuiteTest {
         bozukKaydet(klasor, "saglik-raporu-imzaalani.pdf", imzaBoz(report));
         bozukKaydet(klasor, "transkript-imzaalani.pdf", imzaBoz(transcript));
         bozukKaydet(klasor, "katilim-sertifikasi-imzaalani.pdf", imzaBoz(certificate));
+        
+        //tabloyu hazırla
+        Files.writeString(klasor.resolve("sonuclar.md"), tablo.toString());
 	    }
 	    
 	    private void bozukKaydet(Path klasor, String ad, byte[] bozuk) throws Exception {
@@ -124,9 +129,12 @@ class TamperSuiteTest {
 	        assertEquals(Verdict.MODIFIED, verifier.verify(bozuk).verdict(), ad);
 	        mvc.perform(multipart("/dogrula").file(new MockMultipartFile("pdf", ad, "application/pdf", bozuk)))
 	        .andExpect(content().string(containsString("Belge imzadan sonra değiştirilmiş")));
+	        Verdict sonuc = verifier.verify(bozuk).verdict();
+	        tablo.append("| " + ad + " | MODIFIED | " + sonuc + " | Belge imzadan sonra değiştirilmiş |\n");
+	        assertEquals(Verdict.MODIFIED, sonuc, ad);
 	    }
 	    
-	    
+	   
 	    private byte[] panel(String belge, String kayitNo) throws Exception {
 	        return mvc.perform(post("/panel").param("belge", belge).param("kayitNo", kayitNo))
 	                .andExpect(status().isOk())
