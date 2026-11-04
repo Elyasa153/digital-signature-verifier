@@ -3,6 +3,7 @@ package com.trustlayer.dsv.signature;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Calendar;
@@ -15,17 +16,22 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
 import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.asn1.cms.AttributeTable;
 import org.bouncycastle.asn1.cms.CMSAttributes;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.Time;
+import org.bouncycastle.asn1.ess.ESSCertIDv2;
+import org.bouncycastle.asn1.ess.SigningCertificateV2;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.CMSSignedDataGenerator;
+import org.bouncycastle.cms.DefaultSignedAttributeTableGenerator;
 import org.bouncycastle.cms.SignerInformation;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoGeneratorBuilder;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
@@ -48,7 +54,6 @@ class PadesSignature implements PdfSigner, PdfVerifier {
         this.ca = ca;
     }
 
-    // Sınır: PAdES-B-B'nin istediği signing-certificate-v2 özniteliği yok; Adobe bunsuz da doğrular.
     @Override
     public byte[] sign(byte[] pdf, SigningIdentity identity) {
         try (PDDocument doc = Loader.loadPDF(pdf); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -69,8 +74,15 @@ class PadesSignature implements PdfSigner, PdfVerifier {
     private static byte[] cms(byte[] content, SigningIdentity identity) throws IOException {
         try {
             String algorithm = "EC".equals(identity.privateKey().getAlgorithm()) ? "SHA256withECDSA" : "SHA256withRSA";
+            // CAdES zorunlu özniteliği: imzalayan sertifikanın özeti imzaya bağlanır (ETSI EN 319 122-1).
+            // Yoksa Adobe Acrobat imzalayan sertifikayı "kullanım için geçerli değil" diye reddeder.
+            byte[] certHash = MessageDigest.getInstance("SHA-256").digest(identity.certificate().getEncoded());
+            Attribute signingCertificate = new Attribute(PKCSObjectIdentifiers.id_aa_signingCertificateV2,
+                    new DERSet(new SigningCertificateV2(new ESSCertIDv2(certHash))));
             CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
             gen.addSignerInfoGenerator(new JcaSimpleSignerInfoGeneratorBuilder()
+                    .setSignedAttributeGenerator(
+                            new DefaultSignedAttributeTableGenerator(new AttributeTable(signingCertificate)))
                     .build(algorithm, identity.privateKey(), identity.certificate()));
             gen.addCertificates(new JcaCertStore(identity.chain()));
             // false: ayrık imza, belge baytları CMS'in içine kopyalanmaz.
