@@ -10,6 +10,9 @@
 <header th:replace="~{ortak :: ust('panel')}"></header>
 <main>
     <h1>Belge Üretim Paneli</h1>
+    <p class="giris" th:if="${kurumId}">
+        Aktif kurum: <strong th:text="${kurumId}"></strong>
+    </p>
     <ol class="adimlar">
         <li>1 · Şablondan üret</li>
         <li>2 · Kurum anahtarıyla imzala</li>
@@ -18,11 +21,12 @@
 
     <form method="post" th:action="@{/panel}">
         <label>Belge türü
-            <!-- Kurum girişi (FR-8) gelince liste kullanıcının kurumundan gelecek. -->
             <select name="belge">
-                <option value="ornek-universite/transkript" data-ipucu="Transkript: öğrenci no (ör. 2021001)">Örnek Üniversitesi · Transkript</option>
-                <option value="ornek-universite/katilim-sertifikasi" data-ipucu="Sertifika no (ör. SRT-2026-001)">Örnek Üniversitesi · Katılım Sertifikası</option>
-                <option value="ornek-hastane/saglik-raporu" data-ipucu="Rapor no (ör. SR-2026-0101)">Örnek Devlet Hastanesi · Sağlık Raporu</option>
+                <option th:each="s : ${secenekler}"
+                        th:value="${s.deger()}"
+                        th:attr="data-ipucu=${s.ipucu()}"
+                        th:text="${s.etiket()}">
+                </option>
             </select>
         </label>
         <label>Kayıt no <span class="ipucu"></span>
@@ -31,15 +35,25 @@
         <button type="submit">İmzalı belgeyi üret ve indir</button>
     </form>
 
+    <form method="post" th:action="@{/logout}">
+        <button type="submit" style="background: var(--soluk);">Oturumu kapat</button>
+    </form>
+
     <p class="hata" th:if="${hata}" th:text="${hata}"></p>
 </main>
 <footer th:replace="~{ortak :: alt}"></footer>
 <script>
     const tur = document.querySelector('select[name=belge]');
     const ipucu = document.querySelector('.ipucu');
-    const ipucuGoster = () => ipucu.textContent = tur.selectedOptions[0].dataset.ipucu;
-    tur.addEventListener('change', ipucuGoster);
-    ipucuGoster();
+    const ipucuGoster = () => {
+        if (tur && tur.selectedOptions.length > 0) {
+            ipucu.textContent = tur.selectedOptions[0].dataset.ipucu;
+        }
+    };
+    if (tur) {
+        tur.addEventListener('change', ipucuGoster);
+        ipucuGoster();
+    }
 </script>
 </body>
 </html>

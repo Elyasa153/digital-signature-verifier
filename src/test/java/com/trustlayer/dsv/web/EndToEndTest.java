@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -90,7 +91,10 @@ class EndToEndTest {
     }
 
     private byte[] panel(String belge, String kayitNo) throws Exception {
-        return mvc.perform(post("/panel").param("belge", belge).param("kayitNo", kayitNo))
+        String kurum = belge.split("/", 2)[0];
+        return mvc.perform(post("/panel")
+                        .with(user(kurum))
+                        .param("belge", belge).param("kayitNo", kayitNo))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsByteArray();
     }
