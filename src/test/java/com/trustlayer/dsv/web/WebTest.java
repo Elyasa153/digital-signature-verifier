@@ -68,6 +68,15 @@ class WebTest {
     }
 
     @Test
+    void emptyUploadAsksForFile() throws Exception {
+        var file = new MockMultipartFile("pdf", "", "application/octet-stream", new byte[0]);
+        mvc.perform(multipart("/dogrula").file(file))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Dosya seçilmedi.")))
+                .andExpect(content().string(not(containsString("data-sonuc="))));
+    }
+
+    @Test
     void panelDownloadsGeneratedPdf() throws Exception {
         byte[] pdf = mvc.perform(post("/panel").param("belge", "ornek-hastane/saglik-raporu").param("kayitNo", "SR-2026-0101"))
                 .andExpect(status().isOk())

@@ -5,11 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.time.Duration;
@@ -23,6 +27,8 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -43,13 +49,15 @@ import com.trustlayer.dsv.institution.InstitutionRegistry;
 @SpringBootTest
 class PadesSignatureTest {
 
+    private static final String PASSWORD = "test-parola";
+
     @TempDir
     static Path runtime;
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {
         r.add("dsv.runtime-dir", runtime::toString);
-        r.add("dsv.keystore-password", () -> "test-parola");
+        r.add("dsv.keystore-password", () -> PASSWORD);
     }
 
     @Autowired
@@ -159,6 +167,27 @@ class PadesSignatureTest {
         assertEquals(Verdict.REVOKED, verifier.verify(signed).verdict());
     }
 
+    /** Bizim kökün verdiği ama imza anında süresi dolmuş sertifika UNTRUSTED. */
+    @Test
+    void expiredCertificateIsUntrusted() throws Exception {
+        Instant now = Instant.now();
+        assertEquals(Verdict.VALID, signWithRootIssued(now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(30)),
+                KeyUsage.digitalSignature).verdict());
+
+        VerificationResult r = signWithRootIssued(now.minus(Duration.ofDays(60)), now.minus(Duration.ofDays(30)),
+                KeyUsage.digitalSignature);
+        assertEquals(Verdict.UNTRUSTED, r.verdict(), r.detail());
+    }
+
+    /** Bizim kökün verdiği ama imza için değil yalnız sertifika imzalamak için verilen anahtar UNTRUSTED. */
+    @Test
+    void certificateWithoutDigitalSignatureUsageIsUntrusted() throws Exception {
+        Instant now = Instant.now();
+        VerificationResult r = signWithRootIssued(now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(30)),
+                KeyUsage.keyCertSign);
+        assertEquals(Verdict.UNTRUSTED, r.verdict(), r.detail());
+    }
+
     @Test
     void unsignedOrNotPdfIsUnsigned() throws Exception {
         assertEquals(Verdict.UNSIGNED, verifier.verify(samplePdf()).verdict());
@@ -168,6 +197,26 @@ class PadesSignatureTest {
 
     private byte[] signedByDemo() throws Exception {
         return signer.sign(samplePdf(), registry.signingIdentity("ornek-hastane"));
+    }
+
+    /** Kökün anahtarı diskten okunur; süre ve anahtar kullanımı CA'nın sabitlerini atlayıp testte seçilir. */
+    private VerificationResult signWithRootIssued(Instant notBefore, Instant notAfter, int keyUsage) throws Exception {
+        X509Certificate root = ca.rootCertificate(); // root.p12 diskte olsun
+        KeyStore ks = KeyStore.getInstance("PKCS12");
+        try (InputStream in = Files.newInputStream(runtime.resolve("ca/root.p12"))) {
+            ks.load(in, PASSWORD.toCharArray());
+        }
+        PrivateKey rootKey = (PrivateKey) ks.getKey("root", PASSWORD.toCharArray());
+
+        KeyPair pair = ec();
+        var builder = new JcaX509v3CertificateBuilder(root, BigInteger.valueOf(System.nanoTime()),
+                Date.from(notBefore), Date.from(notAfter), new X500Name("CN=Deneme Kurumu, C=TR"), pair.getPublic());
+        builder.addExtension(Extension.keyUsage, true, new KeyUsage(keyUsage));
+        X509Certificate cert = new JcaX509CertificateConverter()
+                .getCertificate(builder.build(new JcaContentSignerBuilder("SHA256withRSA").build(rootKey)));
+
+        byte[] signed = signer.sign(samplePdf(), new SigningIdentity("deneme", pair.getPrivate(), List.of(cert, root)));
+        return verifier.verify(signed);
     }
 
     static byte[] samplePdf() throws Exception {
