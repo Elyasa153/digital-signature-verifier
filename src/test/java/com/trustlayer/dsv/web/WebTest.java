@@ -3,10 +3,12 @@ package com.trustlayer.dsv.web;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.ByteArrayInputStream;
@@ -68,8 +70,64 @@ class WebTest {
     }
 
     @Test
+    void emptyUploadAsksForFile() throws Exception {
+        var file = new MockMultipartFile("pdf", "", "application/octet-stream", new byte[0]);
+        mvc.perform(multipart("/dogrula").file(file))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Dosya seçilmedi.")))
+                .andExpect(content().string(not(containsString("data-sonuc="))));
+    }
+
+    /** FR-8: Giriş yapılmadan /panel adresine gelindiğinde /login'e yönlendirilir. */
+    @Test
+    void unauthenticatedPanelRedirectsToLogin() throws Exception {
+        mvc.perform(get("/panel"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+
+        mvc.perform(post("/panel").param("belge", "ornek-hastane/saglik-raporu").param("kayitNo", "SR-2026-0101"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+    }
+
+    /** FR-8: Her kurum panelde yalnız kendi belge türlerini ve kayıtlarını görür. */
+    @Test
+    void institutionSeesOnlyOwnDocumentTypesOnPanel() throws Exception {
+        mvc.perform(get("/panel").with(user("ornek-universite")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("ornek-universite/transkript")))
+                .andExpect(content().string(containsString("ornek-universite/katilim-sertifikasi")))
+                .andExpect(content().string(not(containsString("ornek-hastane/saglik-raporu"))));
+
+        mvc.perform(get("/panel").with(user("ornek-hastane")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("ornek-hastane/saglik-raporu")))
+                .andExpect(content().string(not(containsString("ornek-universite/transkript"))));
+    }
+
+    /** FR-8 Kabul Ölçütü: Başka kurumun kaydına erişim HTTP 403 ile reddedilir. */
+    @Test
+    void accessingAnotherInstitutionRecordReturnsForbidden() throws Exception {
+        mvc.perform(post("/panel")
+                        .with(user("ornek-universite"))
+                        .param("belge", "ornek-hastane/saglik-raporu")
+                        .param("kayitNo", "SR-2026-0101"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(containsString("Başka bir kurumun kaydına erişim yetkiniz yok")));
+
+        mvc.perform(post("/panel")
+                        .with(user("ornek-hastane"))
+                        .param("belge", "ornek-universite/transkript")
+                        .param("kayitNo", "2021001"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void panelDownloadsGeneratedPdf() throws Exception {
-        byte[] pdf = mvc.perform(post("/panel").param("belge", "ornek-hastane/saglik-raporu").param("kayitNo", "SR-2026-0101"))
+        byte[] pdf = mvc.perform(post("/panel")
+                        .with(user("ornek-hastane"))
+                        .param("belge", "ornek-hastane/saglik-raporu")
+                        .param("kayitNo", "SR-2026-0101"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 .andReturn().getResponse().getContentAsByteArray();
@@ -78,7 +136,10 @@ class WebTest {
 
     @Test
     void panelShowsErrorForUnknownRecord() throws Exception {
-        mvc.perform(post("/panel").param("belge", "ornek-hastane/saglik-raporu").param("kayitNo", "YOK"))
+        mvc.perform(post("/panel")
+                        .with(user("ornek-hastane"))
+                        .param("belge", "ornek-hastane/saglik-raporu")
+                        .param("kayitNo", "YOK"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("Kayıt bulunamadı")));
     }

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kurum Girişi · TrustLayer</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header th:replace="~{ortak :: ust('panel')}"></header>
+<main>
+    <h1>Kurum Girişi</h1>
+    <p class="giris">Belge üretim paneline erişmek için kurum hesabınızla giriş yapın.</p>
+
+    <p class="hata" th:if="${param.error}">Kurum kullanıcı adı veya parola hatalı.</p>
+    <p class="uyari" th:if="${param.cikis}">Oturumunuz güvenli bir şekilde kapatıldı.</p>
+
+    <form method="post" th:action="@{/login}">
+        <label>Kurum kimliği
+            <input name="username" placeholder="ör. ornek-universite veya ornek-hastane" required autofocus>
+        </label>
+        <label>Parola
+            <input type="password" name="password" required>
+        </label>
+        <button type="submit">Giriş yap</button>
+    </form>
+</main>
+<footer th:replace="~{ortak :: alt}"></footer>
+</body>
+</html>

@@ -1,11 +1,17 @@
 package com.trustlayer.dsv.web;
 
+import java.security.Principal;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,11 +25,27 @@ import com.trustlayer.dsv.institution.InstitutionRegistry;
 import com.trustlayer.dsv.signature.PdfSigner;
 
 /**
- * Kurum belge üretim paneli (UC-1, FR-3..FR-6): üret → kurum anahtarıyla imzala → indir.
- * Şimdilik girişsiz; FR-8 girişi geldiğinde kurum, formdan değil oturumdaki kullanıcıdan gelir.
+ * Kurum belge üretim paneli (UC-1, FR-3..FR-6, FR-8): üret → kurum anahtarıyla imzala → indir.
+ * Her kurum yalnız kendi kayıtlarını ve belge türlerini görür; başka kurumun kaydına erişim HTTP 403 alır.
  */
 @Controller
 class PanelController {
+
+    record BelgeSecenegi(String deger, String etiket, String ipucu) {
+    }
+
+    private static final Map<String, List<BelgeSecenegi>> KURUM_BELGELERI = Map.of(
+            "ornek-universite", List.of(
+                    new BelgeSecenegi("ornek-universite/transkript",
+                            "Örnek Üniversitesi · Transkript",
+                            "Transkript: öğrenci no (ör. 2021001)"),
+                    new BelgeSecenegi("ornek-universite/katilim-sertifikasi",
+                            "Örnek Üniversitesi · Katılım Sertifikası",
+                            "Sertifika no (ör. SRT-2026-001)")),
+            "ornek-hastane", List.of(
+                    new BelgeSecenegi("ornek-hastane/saglik-raporu",
+                            "Örnek Devlet Hastanesi · Sağlık Raporu",
+                            "Rapor no (ör. SR-2026-0101)")));
 
     private final DocumentGenerator generator;
     private final InstitutionRegistry institutions;
@@ -35,20 +57,31 @@ class PanelController {
         this.signer = signer;
     }
 
+    @GetMapping("/login")
+    String loginPage() {
+        return "login";
+    }
+
     @GetMapping("/panel")
-    String form() {
+    String form(Principal principal, Model model) {
+        populatePanelModel(principal, model);
         return "panel";
     }
 
     /** @param belge {@code <kurum>/<tür>}, ör. {@code ornek-hastane/saglik-raporu} */
     @PostMapping("/panel")
-    ResponseEntity<byte[]> generate(@RequestParam String belge, @RequestParam String kayitNo) {
+    ResponseEntity<byte[]> generate(@RequestParam String belge, @RequestParam String kayitNo, Principal principal) {
         String[] parts = belge.split("/", 2);
         if (parts.length != 2) {
             throw new IllegalArgumentException("Geçersiz belge türü: " + belge);
         }
-        GeneratedDocument doc = generator.generate(parts[0], parts[1], kayitNo.trim());
-        byte[] signed = signer.sign(doc.pdf(), institutions.signingIdentity(parts[0]));
+        String requestedInstitution = parts[0];
+        String currentInstitution = principal.getName();
+        if (!currentInstitution.equals(requestedInstitution)) {
+            throw new AccessDeniedException("Başka bir kurumun kaydına erişim yetkiniz yok: " + requestedInstitution);
+        }
+        GeneratedDocument doc = generator.generate(requestedInstitution, parts[1], kayitNo.trim());
+        byte[] signed = signer.sign(doc.pdf(), institutions.signingIdentity(requestedInstitution));
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION,
@@ -56,16 +89,45 @@ class PanelController {
                 .body(signed);
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    ModelAndView forbidden(AccessDeniedException e, Principal principal) {
+        ModelAndView mav = new ModelAndView("panel");
+        if (principal != null) {
+            mav.addObject("kurumId", principal.getName());
+            mav.addObject("secenekler", KURUM_BELGELERI.getOrDefault(principal.getName(), List.of()));
+        }
+        return mav.addObject("hata", e.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    ModelAndView invalid(IllegalArgumentException e) {
-        return new ModelAndView("panel").addObject("hata", e.getMessage());
+    ModelAndView invalid(IllegalArgumentException e, Principal principal) {
+        ModelAndView mav = new ModelAndView("panel");
+        if (principal != null) {
+            mav.addObject("kurumId", principal.getName());
+            mav.addObject("secenekler", KURUM_BELGELERI.getOrDefault(principal.getName(), List.of()));
+        }
+        return mav.addObject("hata", e.getMessage());
     }
 
     /** Ör. anahtar deposu parolası ayarlanmamış: kullanıcıya söylenir, yığın izi gösterilmez. */
     @ExceptionHandler(IllegalStateException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    ModelAndView unavailable(IllegalStateException e) {
-        return new ModelAndView("panel").addObject("hata", "Belge şu an imzalanamıyor: " + e.getMessage());
+    ModelAndView unavailable(IllegalStateException e, Principal principal) {
+        ModelAndView mav = new ModelAndView("panel");
+        if (principal != null) {
+            mav.addObject("kurumId", principal.getName());
+            mav.addObject("secenekler", KURUM_BELGELERI.getOrDefault(principal.getName(), List.of()));
+        }
+        return mav.addObject("hata", "Belge şu an imzalanamıyor: " + e.getMessage());
+    }
+
+    private void populatePanelModel(Principal principal, Model model) {
+        if (principal != null) {
+            String kurumId = principal.getName();
+            model.addAttribute("kurumId", kurumId);
+            model.addAttribute("secenekler", KURUM_BELGELERI.getOrDefault(kurumId, List.of()));
+        }
     }
 }
