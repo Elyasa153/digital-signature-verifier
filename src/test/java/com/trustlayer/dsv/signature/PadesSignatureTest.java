@@ -1,5 +1,6 @@
 package com.trustlayer.dsv.signature;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
@@ -26,10 +28,18 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.cms.Attribute;
+import org.bouncycastle.asn1.cms.ContentInfo;
+import org.bouncycastle.asn1.ess.ESSCertIDv2;
+import org.bouncycastle.asn1.ess.SigningCertificateV2;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.cms.SignerInformation;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.jupiter.api.Test;
@@ -88,6 +98,29 @@ class PadesSignatureTest {
             PDSignature sig = doc.getSignatureDictionaries().get(0);
             assertEquals(PDSignature.SUBFILTER_ETSI_CADES_DETACHED.getName(), sig.getSubFilter());
         }
+    }
+
+    /**
+     * CAdES imzası signing-certificate-v2 taşır: imzalayan sertifikanın SHA-256 özeti (ETSI EN 319 122-1).
+     * Bu öznitelik yokken Adobe Acrobat imzalayan sertifikayı "kullanım için geçerli değil" diye reddetti.
+     */
+    @Test
+    void signatureCarriesSigningCertificateV2() throws Exception {
+        SigningIdentity identity = registry.signingIdentity("ornek-hastane");
+        byte[] signed = signer.sign(samplePdf(), identity);
+
+        byte[] contents;
+        try (PDDocument doc = Loader.loadPDF(signed)) {
+            contents = doc.getSignatureDictionaries().get(0).getContents();
+        }
+        ContentInfo info = ContentInfo.getInstance(new ASN1InputStream(contents).readObject());
+        SignerInformation signerInfo = new CMSSignedData(info).getSignerInfos().getSigners().iterator().next();
+        Attribute attr = signerInfo.getSignedAttributes().get(PKCSObjectIdentifiers.id_aa_signingCertificateV2);
+        assertNotNull(attr, "signing-certificate-v2 yok");
+
+        ESSCertIDv2 id = SigningCertificateV2.getInstance(attr.getAttrValues().getObjectAt(0)).getCerts()[0];
+        byte[] expected = MessageDigest.getInstance("SHA-256").digest(identity.certificate().getEncoded());
+        assertArrayEquals(expected, id.getCertHash());
     }
 
     /** TS-07: imzalanan aralıkta, içerik akışında tek bayt değişirse MODIFIED (özet kontrolü). */

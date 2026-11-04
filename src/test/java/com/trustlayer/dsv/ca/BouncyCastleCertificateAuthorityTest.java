@@ -87,6 +87,24 @@ class BouncyCastleCertificateAuthorityTest {
         assertFalse(crl.isRevoked(active));
     }
 
+    /** İptal tarihi iptal anıdır; sonraki CRL yayınlarında ileri kaymaz (yeniden başlatma dahil). */
+    @Test
+    void revocationDateIsFixedAcrossCrls() throws Exception {
+        KeyPair pair = ec();
+        X509Certificate cert = ca.issue(csr("CN=D, C=TR", pair, pair), "d");
+        long before = System.currentTimeMillis() / 1000 * 1000;
+        ca.revoke(cert.getSerialNumber());
+        long after = System.currentTimeMillis();
+
+        long first = ca.currentCrl().getRevokedCertificate(cert).getRevocationDate().getTime();
+        Thread.sleep(1100); // CRL zamanı saniye hassasiyetinde
+        long second = new BouncyCastleCertificateAuthority(runtime, "test-parola", CRL_URL).currentCrl()
+                .getRevokedCertificate(cert).getRevocationDate().getTime();
+
+        assertEquals(first, second);
+        assertTrue(first >= before && first <= after, "iptal anı: " + first);
+    }
+
     /** Kök anahtar diskte kalır: yeniden başlatınca aynı kök, aynı iptaller. */
     @Test
     void rootAndRevocationsSurviveRestart() throws Exception {

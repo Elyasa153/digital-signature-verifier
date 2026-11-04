@@ -22,7 +22,8 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
@@ -126,7 +127,9 @@ class BouncyCastleCertificateAuthority implements CertificateAuthority {
     public synchronized void revoke(BigInteger serialNumber) {
         try {
             Files.createDirectories(dir);
-            Files.writeString(dir.resolve("revoked.txt"), serialNumber.toString(16) + "\n", StandardCharsets.UTF_8,
+            // Satır: "<seri, onaltılık> <iptal anı, epoch ms>". Tarih CRL'de iptal tarihi olarak kalıcıdır.
+            String line = serialNumber.toString(16) + " " + System.currentTimeMillis() + "\n";
+            Files.writeString(dir.resolve("revoked.txt"), line, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -141,8 +144,8 @@ class BouncyCastleCertificateAuthority implements CertificateAuthority {
             Instant now = Instant.now();
             JcaX509v2CRLBuilder builder = new JcaX509v2CRLBuilder(rootCert, Date.from(now));
             builder.setNextUpdate(Date.from(now.plus(Duration.ofDays(7))));
-            for (BigInteger serial : revokedSerials()) {
-                builder.addCRLEntry(serial, Date.from(now), CRLReason.privilegeWithdrawn);
+            for (Map.Entry<BigInteger, Date> revoked : revocations().entrySet()) {
+                builder.addCRLEntry(revoked.getKey(), revoked.getValue(), CRLReason.privilegeWithdrawn);
             }
             builder.addExtension(Extension.authorityKeyIdentifier, false,
                     new JcaX509ExtensionUtils().createAuthorityKeyIdentifier(rootCert));
@@ -154,12 +157,22 @@ class BouncyCastleCertificateAuthority implements CertificateAuthority {
         }
     }
 
-    private List<BigInteger> revokedSerials() throws IOException {
+    /** Seri → iptal anı. Tarihsiz eski satırlarda dosyanın son değişme anı kullanılır (gerçek iptalden önce olamaz). */
+    private Map<BigInteger, Date> revocations() throws IOException {
         Path file = dir.resolve("revoked.txt");
+        Map<BigInteger, Date> result = new LinkedHashMap<>();
         if (!Files.exists(file)) {
-            return List.of();
+            return result;
         }
-        return Files.readAllLines(file).stream().filter(l -> !l.isBlank()).map(l -> new BigInteger(l.trim(), 16)).toList();
+        Date legacy = new Date(Files.getLastModifiedTime(file).toMillis());
+        for (String line : Files.readAllLines(file)) {
+            String[] parts = line.trim().split("\\s+");
+            if (!parts[0].isEmpty()) {
+                result.putIfAbsent(new BigInteger(parts[0], 16),
+                        parts.length > 1 ? new Date(Long.parseLong(parts[1])) : legacy);
+            }
+        }
+        return result;
     }
 
     private void loadOrCreateRoot() {
