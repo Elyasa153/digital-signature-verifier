@@ -16,6 +16,8 @@ import org.springframework.security.web.SecurityFilterChain;
  * FR-8 ve FR-9 güvenlik yapılandırması:
  * - /dogrula ve /crl herkese açıktır, hesap gerektirmez (FR-9).
  * - /panel giriş gerektirir; girişsiz istekler /login sayfasına yönlendirilir (FR-8).
+ * - Oturumla yapılan her POST CSRF belirteci ister: başka bir site, girişli kurumun tarayıcısına belge ürettiremez.
+ *   /dogrula hariç: oturumsuz, kimse adına işlem yapmaz.
  */
 @Configuration
 @EnableWebSecurity
@@ -24,7 +26,7 @@ class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/dogrula", "/panel", "/logout"))
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/dogrula"))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/dogrula", "/crl", "/style.css", "/login", "/error").permitAll()
                 .requestMatchers("/panel", "/panel/**").authenticated()
