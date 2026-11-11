@@ -1,4 +1,5 @@
 {
+  "name": "Katılım Sertifikası",
   "issuer": "Örnek Üniversitesi Sürekli Eğitim Merkezi",
   "title": "KATILIM SERTİFİKASI",
   "intro": "{ad_soyad}, {tarih} tarihinde tamamlanan {sure_saat} saatlik \"{egitim_adi}\" eğitimine katılmıştır.",

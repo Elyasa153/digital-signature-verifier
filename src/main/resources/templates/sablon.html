@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Belge Şablonu Yükle · TrustLayer</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header th:replace="~{ortak :: ust('panel')}"></header>
+<main>
+    <h1>Belge Şablonu Yükle</h1>
+    <p class="giris">Kurumunuzun yeni bir belge türünü ekleyin: şablon (JSON) ve kayıtlar (CSV). Kaydetmeden önce
+        her kayıt denenir; eksik alan ya da sayfaya sığmayan belge varsa kaydedilmez.
+        <a th:href="@{/panel}">Panele dön</a></p>
+
+    <p class="hata" th:if="${hata}" th:text="${hata}"></p>
+
+    <form method="post" enctype="multipart/form-data" th:action="@{/panel/sablon}" class="kutu">
+        <label>Belge türü kodu <span class="ipucu">küçük harf, rakam, tire; ör. ogrenci-belgesi</span>
+            <input name="tur" required pattern="[a-z0-9-]+">
+        </label>
+        <label>Şablon (JSON)
+            <input type="file" name="sablon" accept=".json,application/json" required>
+        </label>
+        <label>Kayıtlar (CSV, UTF-8) <span class="ipucu">ilk satır başlık, ilk sütun kayıt no, ayraç noktalı virgül</span>
+            <input type="file" name="kayitlar" accept=".csv,text/csv" required>
+        </label>
+        <label>Tablo satırları (CSV) <span class="ipucu">yalnız şablonda "table" varsa; ilk sütun kayıt no</span>
+            <input type="file" name="tablo" accept=".csv,text/csv">
+        </label>
+        <div class="dugmeler">
+            <button type="submit" name="islem" value="onizle" class="ikincil" formtarget="_blank">Önizle (ilk kayıt)</button>
+            <button type="submit" name="islem" value="kaydet">Kaydet</button>
+        </div>
+    </form>
+
+    <details>
+        <summary>Dosya biçimi</summary>
+        <p>Şablondaki metinlerde <code>{alan}</code> yazan yerler kaydın o sütunuyla doldurulur. <code>fields</code>
+            "Etiket: değer" satırlarıdır. <code>name</code> panelde görünen addır. <code>intro</code>,
+            <code>closing</code> ve <code>table</code> isteğe bağlıdır.</p>
+<pre>{
+  "name": "Öğrenci Belgesi",
+  "issuer": "Örnek Üniversitesi Öğrenci İşleri",
+  "title": "ÖĞRENCİ BELGESİ",
+  "intro": "{ad_soyad} üniversitemizin kayıtlı öğrencisidir.",
+  "fields": [
+    {"key": "ogrenci_no", "label": "Öğrenci No"},
+    {"key": "ad_soyad", "label": "Ad Soyad"}
+  ]
+}</pre>
+<pre>ogrenci_no;ad_soyad
+2021001;Ayşe Yılmaz</pre>
+    </details>
+</main>
+<footer th:replace="~{ortak :: alt}"></footer>
+</body>
+</html>

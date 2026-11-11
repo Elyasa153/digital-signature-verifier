@@ -4,12 +4,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +24,8 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
 
 import com.google.zxing.BarcodeFormat;
@@ -32,7 +37,10 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
 import tools.jackson.databind.json.JsonMapper;
 
-/** Şablon + CSV kaydı → tek sayfalık A4 PDF, sağ altta doğrulama QR'ı (FR-3..FR-5). */
+/**
+ * Şablon + CSV kaydı → tek sayfalık A4 PDF, sağ altta doğrulama QR'ı (FR-3..FR-5).
+ * Şablon önce kurumun yüklediği {@code <runtime>/sablonlar/<kurum>/<tür>.json}, yoksa uygulamadaki örnek şablondur.
+ */
 @Component
 class PdfBoxDocumentGenerator implements DocumentGenerator {
 
@@ -47,13 +55,54 @@ class PdfBoxDocumentGenerator implements DocumentGenerator {
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final ZoneId ZONE = ZoneId.of("Europe/Istanbul");
 
+    private static final String CLASSPATH_DIR = "document-templates/";
+
     private final RecordSource records;
     private final String verifyBaseUrl;
+    private final Path uploadDir;
     private final JsonMapper json = JsonMapper.builder().build();
 
-    PdfBoxDocumentGenerator(RecordSource records, @Value("${dsv.verify-base-url}") String verifyBaseUrl) {
+    PdfBoxDocumentGenerator(RecordSource records, @Value("${dsv.verify-base-url}") String verifyBaseUrl,
+            @Value("${dsv.runtime-dir}") Path runtimeDir) {
         this.records = records;
         this.verifyBaseUrl = verifyBaseUrl;
+        this.uploadDir = uploadDir(runtimeDir);
+    }
+
+    /** Kurumların yüklediği şablonlar. */
+    static Path uploadDir(Path runtimeDir) {
+        return runtimeDir.resolve("sablonlar");
+    }
+
+    @Override
+    public List<DocumentType> documentTypes(String institutionId) {
+        CsvRecordSource.requireId(institutionId);
+        // Tür → şablon; yüklenen şablon aynı adlı örneğin yerine geçer.
+        Map<String, DocumentTemplate> templates = new TreeMap<>();
+        try {
+            for (Resource r : new PathMatchingResourcePatternResolver()
+                    .getResources("classpath*:" + CLASSPATH_DIR + institutionId + "/*.json")) {
+                try (InputStream in = r.getInputStream()) {
+                    templates.put(r.getFilename().replace(".json", ""), json.readValue(in, DocumentTemplate.class));
+                }
+            }
+            Path dir = uploadDir.resolve(institutionId);
+            if (Files.isDirectory(dir)) {
+                try (var files = Files.list(dir)) {
+                    for (Path f : files.filter(f -> f.toString().endsWith(".json")).toList()) {
+                        templates.put(f.getFileName().toString().replace(".json", ""), parse(Files.readAllBytes(f)));
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        List<DocumentType> result = new ArrayList<>();
+        templates.forEach((type, t) -> {
+            String example = records.firstRecordId(institutionId, type).map(id -> " (ör. " + id + ")").orElse("");
+            result.add(new DocumentType(type, t.name() != null ? t.name() : t.title(), t.fields().get(0).label() + example));
+        });
+        return result;
     }
 
     @Override
@@ -68,6 +117,12 @@ class PdfBoxDocumentGenerator implements DocumentGenerator {
                 throw new IllegalArgumentException("Kayıt " + recordId + ": " + template.table().source() + " satırı yok");
             }
         }
+        return render(template, record, rows, recordId);
+    }
+
+    /** Kaydedilmemiş bir şablonu bir kayıtla basar: yükleme önizlemesi ve doğrulaması için. */
+    GeneratedDocument render(DocumentTemplate template, Map<String, String> record, List<Map<String, String>> rows,
+            String recordId) {
         UUID documentId = UUID.randomUUID();
         try {
             return new GeneratedDocument(documentId, render(template, record, rows, recordId, documentId));
@@ -76,10 +131,48 @@ class PdfBoxDocumentGenerator implements DocumentGenerator {
         }
     }
 
+    /** Şablon JSON'u; zorunlu alanlar ve anahtar biçimi kontrol edilir (yüklenen dosya güvenilmez girdidir). */
+    DocumentTemplate parse(byte[] content) {
+        DocumentTemplate t;
+        try {
+            t = json.readValue(content, DocumentTemplate.class);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Şablon JSON'u okunamadı: " + e.getMessage().lines().findFirst().orElse(""));
+        }
+        if (t == null || blank(t.issuer()) || blank(t.title()) || t.fields() == null || t.fields().isEmpty()) {
+            throw new IllegalArgumentException("Şablonda issuer, title ve en az bir fields satırı olmalı.");
+        }
+        List<DocumentTemplate.Field> all = new ArrayList<>(t.fields());
+        if (t.table() != null) {
+            if (t.table().columns() == null || t.table().columns().isEmpty()) {
+                throw new IllegalArgumentException("Şablondaki tablonun en az bir sütunu olmalı.");
+            }
+            CsvRecordSource.requireId(t.table().source());
+            all.addAll(t.table().columns());
+        }
+        for (DocumentTemplate.Field f : all) {
+            if (f == null || f.key() == null || !f.key().matches("[A-Za-z0-9_]+") || blank(f.label())) {
+                throw new IllegalArgumentException("Her alanın key (harf, rakam, _) ve label değeri olmalı.");
+            }
+        }
+        return t;
+    }
+
+    private static boolean blank(String s) {
+        return s == null || s.isBlank();
+    }
+
     private DocumentTemplate loadTemplate(String institutionId, String documentType) {
-        String path = "document-templates/" + CsvRecordSource.requireId(institutionId) + "/"
-                + CsvRecordSource.requireId(documentType) + ".json";
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream(path)) {
+        String relative = CsvRecordSource.requireId(institutionId) + "/" + CsvRecordSource.requireId(documentType) + ".json";
+        Path uploaded = uploadDir.resolve(relative);
+        if (Files.exists(uploaded)) {
+            try {
+                return parse(Files.readAllBytes(uploaded));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream(CLASSPATH_DIR + relative)) {
             if (in == null) {
                 throw new IllegalArgumentException("Şablon yok: " + institutionId + "/" + documentType);
             }

@@ -19,9 +19,11 @@
         <li>3 · İndir</li>
     </ol>
 
+    <p class="uyari" th:if="${bilgi}" th:text="${bilgi}"></p>
     <p class="uyari" th:if="${kurumId != null and #lists.isEmpty(secenekler)}">
         Bu kurum için henüz belge şablonu tanımlanmamış.
     </p>
+    <p class="giris" th:if="${kurumId}"><a th:href="@{/panel/sablon}">+ Yeni belge türü yükle</a></p>
 
     <form method="post" th:action="@{/panel}" th:unless="${#lists.isEmpty(secenekler)}">
         <label>Belge türü

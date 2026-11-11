@@ -34,7 +34,7 @@ class CsvRecordSourceTest {
                 2;MAT-101
                 1;BMÜ-102
                 """);
-        source = new CsvRecordSource(dir);
+        source = new CsvRecordSource(Path.of("target/runtime-yok"), dir);
     }
 
     @Test
