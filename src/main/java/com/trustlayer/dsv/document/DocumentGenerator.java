@@ -1,5 +1,7 @@
 package com.trustlayer.dsv.document;
 
+import java.util.List;
+
 /**
  * Şablon + kayıt → imzasız PDF (İP-3). İmza ve kurum anahtarından habersizdir.
  */
@@ -11,4 +13,7 @@ public interface DocumentGenerator {
      * @throws IllegalArgumentException kayıt yoksa ya da şablonun istediği bir alan eksikse
      */
     GeneratedDocument generate(String institutionId, String documentType, String recordId);
+
+    /** Kurumun üretebileceği belge türleri: örnek şablonlar + kurumun yükledikleri. */
+    List<DocumentType> documentTypes(String institutionId);
 }

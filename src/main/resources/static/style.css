@@ -375,3 +375,34 @@ td.eylem input, td.eylem button {
     padding: 7px 10px;
     font-size: .85rem;
 }
+
+/* Şablon yükleme */
+
+form.kutu {
+    padding: 20px;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 10px;
+}
+
+.dugmeler {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+details {
+    margin-top: 8px;
+    font-size: .92rem;
+}
+
+summary { cursor: pointer; font-weight: 600; }
+
+pre {
+    overflow-x: auto;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 8px;
+    font-size: .82rem;
+}

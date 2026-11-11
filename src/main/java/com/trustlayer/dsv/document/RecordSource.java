@@ -12,4 +12,7 @@ public interface RecordSource {
 
     /** Kayda bağlı satırlar (ör. transkriptteki dersler): {@code table} içinde ilk sütunu {@code recordId} olanlar. */
     List<Map<String, String>> findRows(String institutionId, String table, String recordId);
+
+    /** Paneldeki ipucu için ilk kaydın numarası. */
+    Optional<String> firstRecordId(String institutionId, String documentType);
 }

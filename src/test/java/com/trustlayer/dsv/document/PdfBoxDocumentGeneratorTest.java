@@ -32,7 +32,7 @@ class PdfBoxDocumentGeneratorTest {
     static final String BASE_URL = "http://localhost:8080/dogrula";
 
     final DocumentGenerator generator =
-            new PdfBoxDocumentGenerator(new CsvRecordSource(Path.of("data/records")), BASE_URL);
+            new PdfBoxDocumentGenerator(new CsvRecordSource(Path.of("target/runtime-yok"), Path.of("data/records")), BASE_URL, Path.of("target/runtime-yok"));
 
     /** TS-09: üç belge türü üretilir, Türkçe karakterler bozulmaz, QR belge kimliğini taşır. */
     @ParameterizedTest
@@ -84,7 +84,7 @@ class PdfBoxDocumentGeneratorTest {
                 rapor_no;ad_soyad;dogum_tarihi;muayene_tarihi;rapor_turu;karar;hekim
                 SR-1;Can Erdoğan;14.03.1998;02.10.2026;İşe giriş;;Dr. Selin Koç
                 """);
-        var g = new PdfBoxDocumentGenerator(new CsvRecordSource(dir), BASE_URL);
+        var g = new PdfBoxDocumentGenerator(new CsvRecordSource(Path.of("target/runtime-yok"), dir), BASE_URL, Path.of("target/runtime-yok"));
 
         var e = assertThrows(IllegalArgumentException.class, () -> g.generate("ornek-hastane", "saglik-raporu", "SR-1"));
         assertTrue(e.getMessage().contains("SR-1") && e.getMessage().contains("karar"), e.getMessage());
@@ -95,7 +95,7 @@ class PdfBoxDocumentGeneratorTest {
         Files.createDirectories(dir.resolve("ornek-universite"));
         Files.writeString(dir.resolve("ornek-universite/transkript.csv"),
                 "ogrenci_no;ad_soyad;bolum;giris_yili;gno\n1;Ayşe;Bilgisayar;2021;3,00\n");
-        var g = new PdfBoxDocumentGenerator(new CsvRecordSource(dir), BASE_URL);
+        var g = new PdfBoxDocumentGenerator(new CsvRecordSource(Path.of("target/runtime-yok"), dir), BASE_URL, Path.of("target/runtime-yok"));
 
         assertThrows(IllegalArgumentException.class, () -> g.generate("ornek-universite", "transkript", "1"));
     }

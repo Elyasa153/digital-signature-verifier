@@ -1,4 +1,5 @@
 {
+  "name": "Sağlık Raporu",
   "issuer": "Örnek Devlet Hastanesi",
   "title": "SAĞLIK RAPORU",
   "intro": "Bu rapor, {muayene_tarihi} tarihinde muayene edilen {ad_soyad} için düzenlenmiştir.",

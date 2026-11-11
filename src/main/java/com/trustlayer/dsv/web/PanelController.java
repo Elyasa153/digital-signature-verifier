@@ -2,7 +2,6 @@ package com.trustlayer.dsv.web;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -35,19 +34,6 @@ class PanelController {
 
     record BelgeSecenegi(String deger, String etiket, String ipucu) {
     }
-
-    private static final Map<String, List<BelgeSecenegi>> KURUM_BELGELERI = Map.of(
-            "ornek-universite", List.of(
-                    new BelgeSecenegi("ornek-universite/transkript",
-                            "Örnek Üniversitesi · Transkript",
-                            "Transkript: öğrenci no (ör. 2021001)"),
-                    new BelgeSecenegi("ornek-universite/katilim-sertifikasi",
-                            "Örnek Üniversitesi · Katılım Sertifikası",
-                            "Sertifika no (ör. SRT-2026-001)")),
-            "ornek-hastane", List.of(
-                    new BelgeSecenegi("ornek-hastane/saglik-raporu",
-                            "Örnek Devlet Hastanesi · Sağlık Raporu",
-                            "Rapor no (ör. SR-2026-0101)")));
 
     private final DocumentGenerator generator;
     private final InstitutionRegistry institutions;
@@ -105,7 +91,7 @@ class PanelController {
         ModelAndView mav = new ModelAndView("panel");
         if (principal != null) {
             mav.addObject("kurumId", principal.getName());
-            mav.addObject("secenekler", KURUM_BELGELERI.getOrDefault(principal.getName(), List.of()));
+            mav.addObject("secenekler", secenekler(principal.getName()));
         }
         return mav.addObject("hata", e.getMessage());
     }
@@ -116,7 +102,7 @@ class PanelController {
         ModelAndView mav = new ModelAndView("panel");
         if (principal != null) {
             mav.addObject("kurumId", principal.getName());
-            mav.addObject("secenekler", KURUM_BELGELERI.getOrDefault(principal.getName(), List.of()));
+            mav.addObject("secenekler", secenekler(principal.getName()));
         }
         return mav.addObject("hata", e.getMessage());
     }
@@ -128,16 +114,22 @@ class PanelController {
         ModelAndView mav = new ModelAndView("panel");
         if (principal != null) {
             mav.addObject("kurumId", principal.getName());
-            mav.addObject("secenekler", KURUM_BELGELERI.getOrDefault(principal.getName(), List.of()));
+            mav.addObject("secenekler", secenekler(principal.getName()));
         }
         return mav.addObject("hata", "Belge şu an imzalanamıyor: " + e.getMessage());
+    }
+
+    /** Kurumun şablonlarından: örnekler + kendi yükledikleri. */
+    private List<BelgeSecenegi> secenekler(String kurumId) {
+        return generator.documentTypes(kurumId).stream()
+                .map(t -> new BelgeSecenegi(kurumId + "/" + t.id(), t.name(), t.hint())).toList();
     }
 
     private void populatePanelModel(Principal principal, Model model) {
         if (principal != null) {
             String kurumId = principal.getName();
             model.addAttribute("kurumId", kurumId);
-            model.addAttribute("secenekler", KURUM_BELGELERI.getOrDefault(kurumId, List.of()));
+            model.addAttribute("secenekler", secenekler(kurumId));
         }
     }
 }
