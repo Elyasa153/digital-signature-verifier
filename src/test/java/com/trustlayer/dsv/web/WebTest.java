@@ -95,13 +95,13 @@ class WebTest {
     /** FR-8: Her kurum panelde yalnız kendi belge türlerini ve kayıtlarını görür. */
     @Test
     void institutionSeesOnlyOwnDocumentTypesOnPanel() throws Exception {
-        mvc.perform(get("/panel").with(user("ornek-universite")))
+        mvc.perform(get("/panel").with(user("ornek-universite").roles("INSTITUTION")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("ornek-universite/transkript")))
                 .andExpect(content().string(containsString("ornek-universite/katilim-sertifikasi")))
                 .andExpect(content().string(not(containsString("ornek-hastane/saglik-raporu"))));
 
-        mvc.perform(get("/panel").with(user("ornek-hastane")))
+        mvc.perform(get("/panel").with(user("ornek-hastane").roles("INSTITUTION")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("ornek-hastane/saglik-raporu")))
                 .andExpect(content().string(not(containsString("ornek-universite/transkript"))));
@@ -111,19 +111,19 @@ class WebTest {
     @Test
     void panelPostWithoutCsrfTokenIsRejected() throws Exception {
         mvc.perform(post("/panel")
-                        .with(user("ornek-hastane"))
+                        .with(user("ornek-hastane").roles("INSTITUTION"))
                         .param("belge", "ornek-hastane/saglik-raporu")
                         .param("kayitNo", "SR-2026-0101"))
                 .andExpect(status().isForbidden())
                 .andExpect(content().string(not(containsString("%PDF"))));
-        mvc.perform(post("/logout").with(user("ornek-hastane")))
+        mvc.perform(post("/logout").with(user("ornek-hastane").roles("INSTITUTION")))
                 .andExpect(status().isForbidden());
     }
 
     /** Panel ve giriş formları CSRF belirtecini taşır; yoksa gerçek tarayıcıdan gönderim 403 alır. */
     @Test
     void formsCarryCsrfToken() throws Exception {
-        mvc.perform(get("/panel").with(user("ornek-hastane")))
+        mvc.perform(get("/panel").with(user("ornek-hastane").roles("INSTITUTION")))
                 .andExpect(content().string(stringContainsInOrder("action=\"/panel\"", "name=\"_csrf\"",
                         "action=\"/logout\"", "name=\"_csrf\"")));
         mvc.perform(get("/login"))
@@ -134,14 +134,14 @@ class WebTest {
     @Test
     void accessingAnotherInstitutionRecordReturnsForbidden() throws Exception {
         mvc.perform(post("/panel")
-                        .with(csrf()).with(user("ornek-universite"))
+                        .with(csrf()).with(user("ornek-universite").roles("INSTITUTION"))
                         .param("belge", "ornek-hastane/saglik-raporu")
                         .param("kayitNo", "SR-2026-0101"))
                 .andExpect(status().isForbidden())
                 .andExpect(content().string(containsString("Başka bir kurumun kaydına erişim yetkiniz yok")));
 
         mvc.perform(post("/panel")
-                        .with(csrf()).with(user("ornek-hastane"))
+                        .with(csrf()).with(user("ornek-hastane").roles("INSTITUTION"))
                         .param("belge", "ornek-universite/transkript")
                         .param("kayitNo", "2021001"))
                 .andExpect(status().isForbidden());
@@ -150,7 +150,7 @@ class WebTest {
     @Test
     void panelDownloadsGeneratedPdf() throws Exception {
         byte[] pdf = mvc.perform(post("/panel")
-                        .with(csrf()).with(user("ornek-hastane"))
+                        .with(csrf()).with(user("ornek-hastane").roles("INSTITUTION"))
                         .param("belge", "ornek-hastane/saglik-raporu")
                         .param("kayitNo", "SR-2026-0101"))
                 .andExpect(status().isOk())
@@ -162,7 +162,7 @@ class WebTest {
     @Test
     void panelShowsErrorForUnknownRecord() throws Exception {
         mvc.perform(post("/panel")
-                        .with(csrf()).with(user("ornek-hastane"))
+                        .with(csrf()).with(user("ornek-hastane").roles("INSTITUTION"))
                         .param("belge", "ornek-hastane/saglik-raporu")
                         .param("kayitNo", "YOK"))
                 .andExpect(status().isBadRequest())

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kurum Başvurusu · TrustLayer</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header th:replace="~{ortak :: ust('basvuru')}"></header>
+<main>
+    <h1>Kurum Başvurusu</h1>
+    <p class="giris">Belge imzalamak için kurum sertifikası başvurusu. Başvuru kurumsal e-postanızla doğrulanır,
+        ardından CA yöneticisi inceleyip onaylar.</p>
+    <ol class="adimlar">
+        <li>1 · Başvuru</li>
+        <li>2 · E-posta doğrulama</li>
+        <li>3 · Yönetici onayı</li>
+    </ol>
+
+    <p class="hata" th:if="${hata}" th:text="${hata}"></p>
+
+    <div th:if="${onayBekliyor}" class="kart gecerli">
+        <div class="bas">
+            <div>
+                <h2>E-posta doğrulandı</h2>
+                <p><strong th:text="${onayBekliyor.displayName()}"></strong> başvurusu CA yöneticisinin onayını bekliyor.
+                    Onaylanınca giriş bilgileri size ayrı bir kanaldan iletilir.</p>
+            </div>
+        </div>
+    </div>
+
+    <form th:if="${basvuru != null or kodBekleyen != null}" method="post" th:action="@{/basvuru/kod}">
+        <p class="uyari" th:if="${basvuru}">
+            <span>
+                Doğrulama kodu <strong th:text="${basvuru.email()}"></strong> adresine gönderildi (15 dakika geçerli).
+                <small>Demo: e-posta sunucusu yok, kod sunucu günlüğüne yazılır.</small>
+            </span>
+        </p>
+        <input type="hidden" name="kod" th:value="${basvuru != null ? basvuru.id() : kodBekleyen}">
+        <label>Doğrulama kodu
+            <input name="dogrulamaKodu" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" required>
+        </label>
+        <button type="submit">Kodu doğrula</button>
+    </form>
+
+    <form th:if="${basvuru == null and kodBekleyen == null and onayBekliyor == null}" method="post" th:action="@{/basvuru}">
+        <label>Kurum adı
+            <input name="ad" required maxlength="100" th:value="${girdi?.ad()}" placeholder="ör. Örnek Belediyesi">
+        </label>
+        <label>Kısa kod <span class="ipucu">küçük harf, rakam, tire; giriş adınız olur</span>
+            <input name="kod" required pattern="[a-z0-9-]{3,40}" th:value="${girdi?.kod()}" placeholder="ör. ornek-belediye">
+        </label>
+        <label>İmza algoritması
+            <select name="algoritma">
+                <option th:each="a : ${algoritmalar}" th:value="${a}" th:text="${a}"
+                        th:selected="${girdi != null and girdi.algoritma() == a}"></option>
+            </select>
+        </label>
+        <label>Yetkili kişi
+            <input name="yetkili" required maxlength="100" th:value="${girdi?.yetkili()}">
+        </label>
+        <label>Kurumsal e-posta
+            <input type="email" name="eposta" required maxlength="200" th:value="${girdi?.eposta()}">
+        </label>
+        <button type="submit">Başvur</button>
+    </form>
+</main>
+<footer th:replace="~{ortak :: alt}"></footer>
+</body>
+</html>

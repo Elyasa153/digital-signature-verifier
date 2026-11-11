@@ -140,7 +140,7 @@ class TamperSuiteTest {
 	    // Panel girişli (FR-8): belgeyi kendi kurumunun kullanıcısı üretir.
 	    private byte[] panel(String belge, String kayitNo) throws Exception {
 	        String kurum = belge.substring(0, belge.indexOf('/'));
-	        return mvc.perform(post("/panel").with(csrf()).with(user(kurum)).param("belge", belge).param("kayitNo", kayitNo))
+	        return mvc.perform(post("/panel").with(csrf()).with(user(kurum).roles("INSTITUTION")).param("belge", belge).param("kayitNo", kayitNo))
 	                .andExpect(status().isOk())
 	                .andReturn().getResponse().getContentAsByteArray();
 	    }

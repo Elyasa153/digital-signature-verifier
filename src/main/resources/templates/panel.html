@@ -19,7 +19,11 @@
         <li>3 · İndir</li>
     </ol>
 
-    <form method="post" th:action="@{/panel}">
+    <p class="uyari" th:if="${kurumId != null and #lists.isEmpty(secenekler)}">
+        Bu kurum için henüz belge şablonu tanımlanmamış.
+    </p>
+
+    <form method="post" th:action="@{/panel}" th:unless="${#lists.isEmpty(secenekler)}">
         <label>Belge türü
             <select name="belge">
                 <option th:each="s : ${secenekler}"

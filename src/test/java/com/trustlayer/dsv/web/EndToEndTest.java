@@ -94,7 +94,7 @@ class EndToEndTest {
     private byte[] panel(String belge, String kayitNo) throws Exception {
         String kurum = belge.split("/", 2)[0];
         return mvc.perform(post("/panel")
-                        .with(csrf()).with(user(kurum))
+                        .with(csrf()).with(user(kurum).roles("INSTITUTION"))
                         .param("belge", belge).param("kayitNo", kayitNo))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsByteArray();

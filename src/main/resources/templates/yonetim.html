@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CA Yönetimi · TrustLayer</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header th:replace="~{ortak :: ust('yonetim')}"></header>
+<main>
+    <h1>CA Yönetimi</h1>
+    <p class="giris">Kurum başvurularını onaylayın ya da reddedin, kurum sertifikalarını iptal edin. Belge üretimi bu
+        hesaptan yapılamaz.</p>
+
+    <p class="hata" th:if="${hata}" th:text="${hata}"></p>
+    <p class="uyari" th:if="${bilgi}" th:text="${bilgi}"></p>
+    <div class="uyari" th:if="${yeniParola}">
+        <span>
+            <strong th:text="${yeniHesap}"></strong> onaylandı ve sertifikası verildi. Operatör parolası:
+            <code th:text="${yeniParola}"></code>
+            <small>Yalnız bir kez gösterilir. Kuruma e-posta dışında bir kanaldan (telefon, yüz yüze) iletin.</small>
+        </span>
+    </div>
+
+    <h2>Başvurular</h2>
+    <p th:if="${#lists.isEmpty(basvurular)}" class="giris">Başvuru yok.</p>
+    <div class="tablo" th:unless="${#lists.isEmpty(basvurular)}">
+        <table>
+            <thead><tr><th>Kurum</th><th>Yetkili</th><th>Durum</th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="b : ${basvurular}" th:attr="data-durum=${b.status()}">
+                <td><strong th:text="${b.displayName()}"></strong><br><small th:text="${b.id() + ' · ' + b.algorithm()}"></small></td>
+                <td th:text="${b.contactName()}"></td>
+                <td>
+                    <span th:text="${b.status()}"></span>
+                    <br><small th:text="${b.email()}"></small>
+                    <br th:if="${!#strings.isEmpty(b.note())}"><small th:text="${b.note()}"></small>
+                </td>
+                <td class="eylem">
+                    <form th:if="${b.status().name() == 'ONAY_BEKLIYOR'}" method="post" th:action="@{/yonetim/onay}">
+                        <input type="hidden" name="kod" th:value="${b.id()}">
+                        <button type="submit">Onayla</button>
+                    </form>
+                    <form th:if="${b.status().name() == 'ONAY_BEKLIYOR' or b.status().name() == 'KOD_BEKLIYOR'}"
+                          method="post" th:action="@{/yonetim/red}">
+                        <input type="hidden" name="kod" th:value="${b.id()}">
+                        <input name="gerekce" placeholder="Gerekçe" maxlength="200">
+                        <button type="submit" class="ikincil">Reddet</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Kurumlar</h2>
+    <div class="tablo">
+        <table>
+            <thead><tr><th>Kurum</th><th>Algoritma</th><th>Sertifika</th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="k : ${kurumlar}">
+                <td><strong th:text="${k.kurum().displayName()}"></strong><br><small th:text="${k.kurum().id()}"></small></td>
+                <td th:text="${k.kurum().algorithm()}"></td>
+                <td th:text="${k.iptal()} ? 'İptal edildi' : 'Geçerli'"></td>
+                <td class="eylem">
+                    <form th:unless="${k.iptal()}" method="post" th:action="@{/yonetim/iptal}">
+                        <input type="hidden" name="kod" th:value="${k.kurum().id()}">
+                        <input name="gerekce" placeholder="Gerekçe" maxlength="200">
+                        <button type="submit" class="tehlike">İptal et</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Denetim kaydı</h2>
+    <p th:if="${#lists.isEmpty(denetim)}" class="giris">Kayıt yok.</p>
+    <div class="tablo" th:unless="${#lists.isEmpty(denetim)}">
+        <table>
+            <thead><tr><th>Zaman (UTC)</th><th>Kim</th><th>İşlem</th><th>Kurum</th><th>Ayrıntı</th></tr></thead>
+            <tbody>
+            <tr th:each="d : ${denetim}">
+                <td th:text="${#strings.substring(d.at().toString(), 0, 19).replace('T', ' ')}"></td>
+                <td th:text="${d.actor()}"></td>
+                <td th:text="${d.action()}"></td>
+                <td th:text="${d.institution()}"></td>
+                <td th:text="${d.detail()}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <form method="post" th:action="@{/logout}">
+        <button type="submit" class="ikincil">Oturumu kapat</button>
+    </form>
+</main>
+<footer th:replace="~{ortak :: alt}"></footer>
+</body>
+</html>
