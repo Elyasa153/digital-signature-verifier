@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -85,6 +86,20 @@ class BouncyCastleCertificateAuthorityTest {
         crl.verify(ca.rootCertificate().getPublicKey());
         assertTrue(crl.isRevoked(revoked));
         assertFalse(crl.isRevoked(active));
+    }
+
+    /** CRL önbellekte: iptal yokken yeniden imzalanmaz, iptal olunca önbellek beklenmeden yenilenir (UC-3). */
+    @Test
+    void cachedCrlIsRenewedOnRevoke() throws Exception {
+        KeyPair pair = ec();
+        X509Certificate cert = ca.issue(csr("CN=E, C=TR", pair, pair), "e");
+        X509CRL cached = ca.currentCrl();
+        assertSame(cached, ca.currentCrl());
+        assertFalse(cached.isRevoked(cert));
+
+        ca.revoke(cert.getSerialNumber());
+
+        assertTrue(ca.currentCrl().isRevoked(cert));
     }
 
     /** İptal tarihi iptal anıdır; sonraki CRL yayınlarında ileri kaymaz (yeniden başlatma dahil). */
