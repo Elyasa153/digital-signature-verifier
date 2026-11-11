@@ -21,7 +21,9 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.trustlayer.dsv.document.DocumentGenerator;
 import com.trustlayer.dsv.document.GeneratedDocument;
+import com.trustlayer.dsv.common.SigningIdentity;
 import com.trustlayer.dsv.institution.InstitutionRegistry;
+import com.trustlayer.dsv.ra.RegistrationAuthority;
 import com.trustlayer.dsv.signature.PdfSigner;
 
 /**
@@ -50,11 +52,14 @@ class PanelController {
     private final DocumentGenerator generator;
     private final InstitutionRegistry institutions;
     private final PdfSigner signer;
+    private final RegistrationAuthority ra;
 
-    PanelController(DocumentGenerator generator, InstitutionRegistry institutions, PdfSigner signer) {
+    PanelController(DocumentGenerator generator, InstitutionRegistry institutions, PdfSigner signer,
+            RegistrationAuthority ra) {
         this.generator = generator;
         this.institutions = institutions;
         this.signer = signer;
+        this.ra = ra;
     }
 
     @GetMapping("/login")
@@ -80,8 +85,13 @@ class PanelController {
         if (!currentInstitution.equals(requestedInstitution)) {
             throw new AccessDeniedException("Başka bir kurumun kaydına erişim yetkiniz yok: " + requestedInstitution);
         }
+        // İptal edilmiş sertifikayla atılan imza doğrulamada zaten REVOKED olur; hiç üretmemek daha açık.
+        if (ra.isRevoked(requestedInstitution)) {
+            throw new AccessDeniedException("Kurumun sertifikası iptal edilmiş; belge imzalanamaz.");
+        }
         GeneratedDocument doc = generator.generate(requestedInstitution, parts[1], kayitNo.trim());
-        byte[] signed = signer.sign(doc.pdf(), institutions.signingIdentity(requestedInstitution));
+        SigningIdentity identity = institutions.signingIdentity(requestedInstitution);
+        byte[] signed = signer.sign(doc.pdf(), identity);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION,

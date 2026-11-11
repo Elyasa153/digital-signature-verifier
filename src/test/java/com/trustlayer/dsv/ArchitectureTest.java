@@ -27,7 +27,8 @@ class ArchitectureTest {
             "institution", Set.of("ca", "common"),
             "document", Set.of("common"),
             "signature", Set.of("ca", "common"),
-            "experiment", Set.of("signature", "institution", "common"));
+            "experiment", Set.of("signature", "institution", "common"),
+            "ra", Set.of("institution", "ca", "common"));
     // web her şeyi kullanabilir, listede yok.
 
     @Test

@@ -3,6 +3,7 @@ package com.trustlayer.dsv.web;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -139,7 +140,7 @@ class TamperSuiteTest {
 	    // Panel girişli (FR-8): belgeyi kendi kurumunun kullanıcısı üretir.
 	    private byte[] panel(String belge, String kayitNo) throws Exception {
 	        String kurum = belge.substring(0, belge.indexOf('/'));
-	        return mvc.perform(post("/panel").with(user(kurum)).param("belge", belge).param("kayitNo", kayitNo))
+	        return mvc.perform(post("/panel").with(csrf()).with(user(kurum).roles("INSTITUTION")).param("belge", belge).param("kayitNo", kayitNo))
 	                .andExpect(status().isOk())
 	                .andReturn().getResponse().getContentAsByteArray();
 	    }

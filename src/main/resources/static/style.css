@@ -316,3 +316,62 @@ dl {
 
 dt { color: #6b7280; }
 dd { margin: 0; font-weight: 600; }
+
+/* Yönetim (K11) */
+
+h2 {
+    margin: 32px 0 10px;
+    font: 700 1.2rem var(--baslik-font);
+}
+
+button.ikincil { background: var(--soluk); }
+button.tehlike { background: var(--gecersiz); }
+
+code {
+    padding: 2px 6px;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.tablo {
+    overflow-x: auto;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+}
+
+th, td {
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--cizgi);
+}
+
+th {
+    font-size: .8rem;
+    color: var(--soluk);
+}
+
+tbody tr:last-child td { border-bottom: 0; }
+
+td small { color: #6b7280; }
+
+td.eylem form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 6px;
+}
+
+td.eylem input, td.eylem button {
+    padding: 7px 10px;
+    font-size: .85rem;
+}
