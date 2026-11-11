@@ -97,6 +97,10 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- Varsayılan hızlı açılış JIT'i C1'de durdurur; RSA işlemleri 5-7 kat yavaşlar ve deney (FR-10) yanlış ölçer. -->
+					<optimizedLaunch>false</optimizedLaunch>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
