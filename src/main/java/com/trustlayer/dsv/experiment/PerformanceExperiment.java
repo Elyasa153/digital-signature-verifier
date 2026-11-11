@@ -46,8 +46,8 @@ public class PerformanceExperiment {
     /** %95 güven aralığı için t(0.975, sd=29); tekrar sayısı değişirse bu da değişmeli. */
     static final int REPEATS = 30;
     static final double T_95 = 2.045;
-    /** JIT ısınması: her kombinasyonda ölçülmeyen ilk turlar. */
-    static final int WARMUP = 5;
+    /** JIT ısınması: her kombinasyonda ölçülmeyen ilk turlar. 5 tur ilk algoritmayı yavaş ölçtü (11-11). */
+    static final int WARMUP = 30;
 
     private final PdfSigner signer;
     private final PdfVerifier verifier;

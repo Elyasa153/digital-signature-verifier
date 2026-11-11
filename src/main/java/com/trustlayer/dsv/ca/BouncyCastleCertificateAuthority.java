@@ -70,6 +70,7 @@ class BouncyCastleCertificateAuthority implements CertificateAuthority {
     private static final Duration INSTITUTION_VALIDITY = Duration.ofDays(730);
     /** Saat kayması: doğrulayanın saati biraz geride olsa da sertifika "henüz geçerli değil" olmasın. */
     private static final Duration CLOCK_SKEW = Duration.ofDays(1);
+    private static final Duration CRL_REFRESH = Duration.ofDays(1);
 
     private final Path dir;
     private final char[] password;
@@ -78,6 +79,8 @@ class BouncyCastleCertificateAuthority implements CertificateAuthority {
 
     private PrivateKey rootKey;
     private X509Certificate rootCert;
+    /** Son yayımlanan CRL; iptalde ya da süresi yaklaşınca yenilenir. */
+    private X509CRL crl;
 
     BouncyCastleCertificateAuthority(@Value("${dsv.runtime-dir}") Path runtimeDir,
             @Value("${dsv.keystore-password}") String password, @Value("${dsv.crl-url}") String crlUrl) {
@@ -131,15 +134,25 @@ class BouncyCastleCertificateAuthority implements CertificateAuthority {
             String line = serialNumber.toString(16) + " " + System.currentTimeMillis() + "\n";
             Files.writeString(dir.resolve("revoked.txt"), line, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            crl = null;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    // Her çağrıda yeniden imzalanır; iptal sonrası bir sonraki doğrulama hemen görür (UC-3).
+    // İptal önbelleği siler, bir sonraki doğrulama yeni CRL'yi hemen görür (UC-3). İptal yoksa CRL bir gün geçerli
+    // kalır: her doğrulamada RSA-4096 ile yeniden imzalamak doğrulama süresinin ~%75'iydi (ölçüldü, 11-11).
     @Override
     public synchronized X509CRL currentCrl() {
         loadOrCreateRoot();
+        if (crl != null && crl.getThisUpdate().toInstant().plus(CRL_REFRESH).isAfter(Instant.now())) {
+            return crl;
+        }
+        crl = issueCrl();
+        return crl;
+    }
+
+    private X509CRL issueCrl() {
         try {
             Instant now = Instant.now();
             JcaX509v2CRLBuilder builder = new JcaX509v2CRLBuilder(rootCert, Date.from(now));
