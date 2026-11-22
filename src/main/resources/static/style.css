@@ -406,3 +406,202 @@ pre {
     border-radius: 8px;
     font-size: .82rem;
 }
+
+/* Ana sayfa */
+
+.dugme {
+    display: inline-block;
+    padding: 12px 18px;
+    font: 600 1rem system-ui, sans-serif;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    background: var(--murekkep);
+    border: 1px solid var(--murekkep);
+    border-radius: 8px;
+}
+
+.dugme.bos {
+    color: var(--murekkep);
+    background: #fff;
+}
+
+.ana h1 {
+    font-size: clamp(1.8rem, 6vw, 2.4rem);
+    line-height: 1.15;
+}
+
+.ana h2 {
+    margin: 0 0 6px;
+}
+
+.ana-kahraman {
+    display: grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap: 32px;
+    align-items: center;
+}
+
+.ana-eylem {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.ana-belge {
+    position: relative;
+    display: grid;
+    gap: 9px;
+    padding: 22px 20px;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(20, 33, 61, .08);
+    transform: rotate(-1.5deg);
+}
+
+.ana-belge .ust {
+    font: 700 .75rem var(--baslik-font);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--soluk);
+}
+
+.ana-belge strong {
+    margin-bottom: 4px;
+    font: 700 1.1rem var(--baslik-font);
+}
+
+.ana-belge i {
+    height: 8px;
+    border-radius: 4px;
+    background: #ece8df;
+}
+
+.ana-belge i.k { width: 60%; }
+.ana-belge i.o { width: 82%; }
+
+.ana-belge .qr {
+    width: 44px;
+    height: 44px;
+    margin-top: 4px;
+    background: repeating-conic-gradient(var(--murekkep) 0 25%, #fff 0 50%) 0 0 / 11px 11px;
+    border: 3px solid #fff;
+    outline: 1px solid var(--cizgi);
+}
+
+.ana-muhur {
+    position: absolute;
+    right: -12px;
+    bottom: -12px;
+    display: grid;
+    place-content: center;
+    width: 80px;
+    height: 80px;
+    text-align: center;
+    font: 700 .7rem/1.2 system-ui, sans-serif;
+    color: #fff;
+    background: var(--gecerli);
+    border-radius: 50%;
+    box-shadow: 0 6px 16px rgba(31, 122, 77, .35);
+    transform: rotate(8deg);
+}
+
+.ana-muhur b { font-size: 1.4rem; }
+
+.ana-adimlar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 48px 0 40px;
+    padding: 0;
+    list-style: none;
+    counter-reset: adim;
+}
+
+.ana-adimlar li {
+    padding: 18px;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 10px;
+    counter-increment: adim;
+}
+
+.ana-adimlar li::before {
+    content: counter(adim);
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--murekkep);
+    border-radius: 50%;
+}
+
+.ana-adimlar h2 { font-size: 1.05rem; }
+
+.ana-adimlar p {
+    margin: 0;
+    font-size: .92rem;
+    color: var(--soluk);
+}
+
+.ana-sonuclar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ana-sonuclar li {
+    padding: 6px 12px;
+    font-size: .9rem;
+    background: #fff;
+    border: 1px solid var(--cizgi);
+    border-radius: 99px;
+}
+
+.ana-sonuclar i {
+    margin-right: 6px;
+    font-style: normal;
+    font-weight: 700;
+}
+
+.ana-sonuclar .gecerli { color: var(--gecerli); }
+.ana-sonuclar .gecersiz { color: var(--gecersiz); }
+.ana-sonuclar .dikkat { color: var(--dikkat); }
+
+.ana-kurum {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 40px;
+    padding: 22px;
+    color: #fff;
+    background: var(--murekkep);
+    border-radius: 10px;
+}
+
+.ana-kurum p {
+    margin: 0 0 6px;
+    color: #cbd5e1;
+}
+
+.ana-kurum a:not(.dugme) { color: #fff; }
+
+.ana-kurum .dugme {
+    color: var(--murekkep);
+    background: #fff;
+    border-color: #fff;
+}
+
+@media (max-width: 640px) {
+    .ana-kahraman, .ana-adimlar { grid-template-columns: 1fr; }
+    .ana-belge { box-sizing: border-box; width: min(100%, 280px); margin: 8px auto 12px; }
+}

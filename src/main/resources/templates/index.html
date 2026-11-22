@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TrustLayer · Elektronik Belge Doğrulama</title>
+    <meta name="description" content="Kurumların verdiği PDF belgelerin değiştirilip değiştirilmediğini ve kimin imzaladığını hesap açmadan doğrulayın.">
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header th:replace="~{ortak :: ust('')}"></header>
+<main class="ana">
+    <section class="ana-kahraman">
+        <div>
+            <h1>Elinizdeki belge gerçekten o kurumdan mı?</h1>
+            <p class="giris">TrustLayer, kurumların verdiği PDF belgeleri elektronik imzayla mühürler. Belgeyi alan herkes
+                hesap açmadan, belgenin değiştirilip değiştirilmediğini ve kimin imzaladığını görür.</p>
+            <div class="ana-eylem">
+                <a class="dugme" th:href="@{/dogrula}">Belge doğrula</a>
+                <a class="dugme bos" th:href="@{/basvuru}">Kurum başvurusu</a>
+            </div>
+        </div>
+        <div class="ana-belge" aria-hidden="true">
+            <div class="ust">Örnek Üniversite</div>
+            <strong>Transkript</strong>
+            <i class="o"></i><i></i><i class="k"></i><i class="o"></i><i class="k"></i>
+            <span class="qr"></span>
+            <span class="ana-muhur"><b>✓</b>İMZALI</span>
+        </div>
+    </section>
+
+    <ol class="ana-adimlar">
+        <li>
+            <h2>Kurum üretir</h2>
+            <p>Kurum, kendi şablonu ve kayıtlarıyla belgeyi panelden üretir.</p>
+        </li>
+        <li>
+            <h2>Sistem imzalar</h2>
+            <p>Belge, kuruma ait sertifikayla PAdES imzası taşır; üzerine doğrulama QR kodu basılır.</p>
+        </li>
+        <li>
+            <h2>Herkes doğrular</h2>
+            <p>Belgeyi alan kişi PDF'i yükler; bütünlük, imzalayan ve sertifika durumu tek ekranda görünür.</p>
+        </li>
+    </ol>
+
+    <section>
+        <h2>Doğrulama size ne söyler</h2>
+        <ul class="ana-sonuclar">
+            <li><i class="gecerli">✓</i>Belge geçerli</li>
+            <li><i class="gecersiz">✕</i>İmzadan sonra değiştirilmiş</li>
+            <li><i class="dikkat">!</i>İmzalayan tanınmıyor</li>
+            <li><i class="dikkat">!</i>Sertifika iptal edilmiş</li>
+            <li><i class="gecersiz">✕</i>Elektronik imza yok</li>
+        </ul>
+    </section>
+
+    <section class="ana-kurum">
+        <div>
+            <h2>Belge veren bir kurum musunuz?</h2>
+            <p>Başvurun; onaylandığınızda kurumunuza sertifika verilir ve kendi belge şablonlarınızı yükleyebilirsiniz.</p>
+            <p>Hesabınız var mı? <a th:href="@{/login}">Giriş yapın</a></p>
+        </div>
+        <a class="dugme" th:href="@{/basvuru}">Kurum başvurusu</a>
+    </section>
+</main>
+<footer th:replace="~{ortak :: alt}"></footer>
+</body>
+</html>

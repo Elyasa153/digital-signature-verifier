@@ -49,6 +49,15 @@ class WebTest {
     @Autowired
     MockMvc mvc;
 
+    /** Ana sayfa herkese açık: doğrulamaya, kurum başvurusuna ve girişe götürür. */
+    @Test
+    void landingPageLinksToMainFlows() throws Exception {
+        mvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(stringContainsInOrder(
+                        "href=\"/dogrula\"", "href=\"/basvuru\"", "href=\"/login\"")));
+    }
+
     @Test
     void verifyPageShowsUploadForm() throws Exception {
         mvc.perform(get("/dogrula"))
