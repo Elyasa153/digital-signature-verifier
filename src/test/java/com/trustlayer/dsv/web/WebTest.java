@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -41,6 +43,7 @@ class WebTest {
     static void props(DynamicPropertyRegistry r) {
         r.add("dsv.runtime-dir", runtime::toString);
         r.add("dsv.keystore-password", () -> "test-parola");
+        r.add("dsv.demo-password", () -> "demo-parola");
     }
 
     @Autowired
@@ -90,6 +93,47 @@ class WebTest {
         mvc.perform(post("/panel").with(csrf()).param("belge", "ornek-hastane/saglik-raporu").param("kayitNo", "SR-2026-0101"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login"));
+    }
+
+    /** Menü role göre: CA yöneticisi kurum paneli yerine yönetim sayfasını görür. */
+    @Test
+    void navigationLinkDependsOnRole() throws Exception {
+        mvc.perform(get("/dogrula").with(user("ca-yonetici").roles("CA_ADMIN")))
+                .andExpect(content().string(containsString("href=\"/yonetim\"")))
+                .andExpect(content().string(not(containsString("href=\"/panel\""))));
+        mvc.perform(get("/dogrula").with(user("ornek-hastane").roles("INSTITUTION")))
+                .andExpect(content().string(containsString("href=\"/panel\"")))
+                .andExpect(content().string(not(containsString("href=\"/yonetim\""))));
+    }
+
+    /** Yetkisiz sayfa ham JSON değil, açıklama ve kendi sayfasına dönüş linki gösterir. */
+    @Test
+    void forbiddenPageExplainsAndLinksBack() throws Exception {
+        // MockMvc yönlendirmeyi (forward) çalıştırmaz: önce adresi, sonra sayfanın kendisini sınarız.
+        mvc.perform(get("/panel").with(user("ca-yonetici").roles("CA_ADMIN")))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/yetkisiz"));
+        mvc.perform(get("/yonetim").with(user("ornek-hastane").roles("INSTITUTION")))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/yetkisiz"));
+
+        mvc.perform(get("/yetkisiz").with(user("ca-yonetici").roles("CA_ADMIN")))
+                .andExpect(content().string(containsString("Bu sayfa kurum hesapları içindir")))
+                .andExpect(content().string(containsString("href=\"/yonetim\"")));
+        mvc.perform(get("/yetkisiz").with(user("ornek-hastane").roles("INSTITUTION")))
+                .andExpect(content().string(containsString("Bu sayfa CA yöneticisi içindir")))
+                .andExpect(content().string(containsString("href=\"/panel\"")));
+    }
+
+    /** Girişe düşen kullanıcı, girişten sonra gitmek istediği sayfaya döner. */
+    @Test
+    void loginReturnsToRequestedPage() throws Exception {
+        var session = (MockHttpSession) mvc.perform(get("/panel/sablon"))
+                .andExpect(redirectedUrl("/login"))
+                .andReturn().getRequest().getSession();
+        mvc.perform(post("/login").session(session).with(csrf())
+                        .param("username", "ornek-hastane").param("password", "demo-parola"))
+                .andExpect(redirectedUrl("http://localhost/panel/sablon?continue"));
     }
 
     /** FR-8: Her kurum panelde yalnız kendi belge türlerini ve kayıtlarını görür. */

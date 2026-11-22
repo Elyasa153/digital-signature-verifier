@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Erişim Yok · TrustLayer</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header th:replace="~{ortak :: ust('')}"></header>
+<main>
+    <h1>Bu sayfaya erişiminiz yok</h1>
+    <p class="giris" th:if="${anaSayfa == '/yonetim'}">
+        Bu sayfa kurum hesapları içindir. CA yöneticisi hesabıyla belge üretilemez.
+    </p>
+    <p class="giris" th:unless="${anaSayfa == '/yonetim'}">
+        Bu sayfa CA yöneticisi içindir. Kurum hesabıyla başvuru onayı ve sertifika iptali yapılamaz.
+    </p>
+    <p th:if="${anaSayfa}">
+        <a th:href="@{${anaSayfa}}" th:text="${anaSayfa == '/yonetim'} ? 'CA yönetimine dön' : 'Kurum paneline dön'"></a>
+    </p>
+    <form method="post" th:action="@{/logout}">
+        <button type="submit" style="background: var(--soluk);">Oturumu kapatıp başka hesapla gir</button>
+    </form>
+</main>
+<footer th:replace="~{ortak :: alt}"></footer>
+</body>
+</html>
