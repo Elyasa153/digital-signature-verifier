@@ -49,14 +49,16 @@ public class RegistrationAuthority {
     private final InstitutionRegistry registry;
     private final CertificateAuthority ca;
     private final AuditLog audit;
+    private final VerificationCodeSender codeSender;
     private final Path dir;
     private final SecureRandom random = new SecureRandom();
 
     RegistrationAuthority(InstitutionRegistry registry, CertificateAuthority ca, AuditLog audit,
-            @Value("${dsv.runtime-dir}") Path runtimeDir) {
+            VerificationCodeSender codeSender, @Value("${dsv.runtime-dir}") Path runtimeDir) {
         this.registry = registry;
         this.ca = ca;
         this.audit = audit;
+        this.codeSender = codeSender;
         this.dir = runtimeDir.resolve("ra").resolve("basvurular");
     }
 
@@ -95,8 +97,7 @@ public class RegistrationAuthority {
                 Instant.now(), "");
         String oneTimeCode = String.format("%06d", random.nextInt(1_000_000));
         save(new Stored(app, hash(oneTimeCode), Instant.now().plus(CODE_VALIDITY), 0));
-        // Sınır: e-posta sunucusu yok, kod sunucu günlüğüne yazılır; gerçekte kurumsal adrese SMTP ile gider.
-        log.info("[DEMO e-posta] {} adresine doğrulama kodu: {} (başvuru {})", email, oneTimeCode, id);
+        codeSender.send(email, id, oneTimeCode);
         audit.record("başvuran <" + email + ">", "BASVURU", id, displayName + ", " + algorithm);
         return app;
     }

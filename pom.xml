@@ -45,6 +45,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
+		<!-- Hafta 7: Kurum başvuru doğrulama kodu e-posta gönderimi (SMTP varsa gerçek, yoksa demo) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
 		<!-- FR-8: Spring Security ile kurum paneline giriş ve yetkilendirme -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

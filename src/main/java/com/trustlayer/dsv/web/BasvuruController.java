@@ -1,5 +1,8 @@
 package com.trustlayer.dsv.web;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,10 +23,12 @@ class BasvuruController {
 
     private final RegistrationAuthority ra;
     private final AccountStore accounts;
+    private final BasvuruRateLimiter rateLimiter;
 
-    BasvuruController(RegistrationAuthority ra, AccountStore accounts) {
+    BasvuruController(RegistrationAuthority ra, AccountStore accounts, BasvuruRateLimiter rateLimiter) {
         this.ra = ra;
         this.accounts = accounts;
+        this.rateLimiter = rateLimiter;
     }
 
     @GetMapping("/basvuru")
@@ -34,8 +39,15 @@ class BasvuruController {
 
     @PostMapping("/basvuru")
     String apply(@RequestParam String kod, @RequestParam String ad, @RequestParam(required = false) Algorithm algoritma,
-            @RequestParam String yetkili, @RequestParam String eposta, Model model) {
+            @RequestParam String yetkili, @RequestParam String eposta,
+            HttpServletRequest request, HttpServletResponse response, Model model) {
         model.addAttribute("algoritmalar", Algorithm.values());
+        if (!rateLimiter.tryAcquire(request.getRemoteAddr())) {
+            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+            model.addAttribute("hata", "Çok fazla başvuru yaptınız. Lütfen 10 dakika sonra tekrar deneyin.");
+            model.addAttribute("girdi", new Girdi(kod, ad, algoritma, yetkili, eposta));
+            return "basvuru";
+        }
         try {
             if (accounts.exists(kod.trim())) {
                 throw new IllegalArgumentException("Bu kısa kod kullanılamaz: " + kod.trim());

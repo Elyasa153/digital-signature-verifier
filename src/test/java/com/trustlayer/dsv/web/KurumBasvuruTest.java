@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -58,6 +59,14 @@ class KurumBasvuruTest {
 
     @Autowired
     RegistrationAuthority ra;
+
+    @Autowired
+    BasvuruRateLimiter rateLimiter;
+
+    @BeforeEach
+    void resetRateLimiter() {
+        rateLimiter.reset();
+    }
 
     static final RequestPostProcessor ADMIN = user("ca-yonetici").roles("CA_ADMIN");
 
@@ -171,6 +180,27 @@ class KurumBasvuruTest {
                 .andExpect(status().isForbidden());
         mvc.perform(get("/basvuru")).andExpect(content().string(containsString("name=\"_csrf\"")))
                 .andExpect(content().string(not(containsString("class=\"hata\""))));
+    }
+
+
+    /** Hafta 7: Aynı IP'den 10 dakikada 5 başvurudan fazlası HTTP 429 alır. */
+    @Test
+    void sixthApplicationFromSameIpReturnsTooManyRequests() throws Exception {
+        for (int i = 1; i <= 5; i++) {
+            mvc.perform(post("/basvuru").with(csrf())
+                            .with(req -> { req.setRemoteAddr("10.0.0.5"); return req; })
+                            .param("kod", "hiz-test-" + i).param("ad", "Hız Test Kurumu " + i)
+                            .param("algoritma", "ECDSA_P256").param("yetkili", "Yetkili")
+                            .param("eposta", "yetkili" + i + "@hiztest.example"))
+                    .andExpect(status().isOk());
+        }
+        mvc.perform(post("/basvuru").with(csrf())
+                        .with(req -> { req.setRemoteAddr("10.0.0.5"); return req; })
+                        .param("kod", "hiz-test-6").param("ad", "Hız Test Kurumu 6")
+                        .param("algoritma", "ECDSA_P256").param("yetkili", "Yetkili")
+                        .param("eposta", "yetkili6@hiztest.example"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(content().string(containsString("Çok fazla başvuru yaptınız")));
     }
 
     private void apply(String id, String email) throws Exception {
