@@ -24,7 +24,7 @@ class VerifyController {
 
     @GetMapping("/")
     String home() {
-        return "redirect:/dogrula";
+        return "index";
     }
 
     /** QR'dan gelindiyse {@code belge} dolu olur; yalnız uyarı göstermek için kullanılır, güven kaynağı değildir. */
